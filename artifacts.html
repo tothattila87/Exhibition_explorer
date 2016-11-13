@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Exhibition Explorer - Admin Website</title>
+    <title>Exhibition Explorer - Dashboard</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -219,17 +219,17 @@
                 //console.log(exhibID);
 
                 if(exhibBeacon == true && beaconID==""){
-                    alert("for this exhibition you must add a BeaconID");
+                    alert("This exhibition requires a beaconId to be specified!");
                     return;
                 }
 
                 if(exhibQR == true && QRcode==""){
-                    alert("for this exhibition you must add a QR Code");
+                    alert("This exhibition requires a QRCode to be specified!");
                     return;
                 }
 
                 if(exhibQuiz == true && QuizQuestion==""){
-                    alert("for this exhibition you must add a Quiz Question");
+                    alert("This exhibition requires a quiz question to be specified!");
                     return;
                 }
 
@@ -240,7 +240,7 @@
                     tempQuiz=true;
 
                 if(exhibQuiz == true && tempQuiz==false){
-                    alert("for this exhibition you must add every Quiz Answeres");
+                    alert("This exhibition requires a quiz answers to be specified!");
                     return;
                 }
 
@@ -378,7 +378,7 @@
 
                     <form role="form">
 
-                        <label>Choose Exhibition: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <label>Select an exhibition:: &nbsp;&nbsp;&nbsp;</label><p></p>
                         <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="exhibitionID" name="exhibitionID">
                             <select id="mySelect" onchange="changeInputFields();">
                                 <option value="" disabled selected defaultSelected>Choose Exhibition</option>
@@ -390,12 +390,12 @@
                         <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Description"/><p></p>
                         <label>BeaconID: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="beaconID" name="beaconID" placeholder="BeaconID"/><p></p>
                         <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/><p></p>
-                        <label>QR Code URL: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="qrURL" name="qrURL" placeholder="QR code URL"/><p></p>
-                        <label>Quiz Question: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizQuestion" name="quizQuestion" placeholder="Quiz question"/><p></p>
-                        <label>Quiz Right Answere: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizRightAnswere" name="quizAnswere1" placeholder="Quiz answere1"/><p></p>
-                        <label>Quiz False Answere 1: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere1" name="quizAnswere2" placeholder="Quiz answere2"/><p></p>
-                        <label>Quiz False Answere 2: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere2" name="quizAnswere3" placeholder="Quiz answere3"/><p></p>
-                        <label>Quiz False Answere 3: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere3" name="quizAnswere4" placeholder="Quiz answere4"/><p></p>
+                        <label>QR code URL: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="qrURL" name="qrURL" placeholder="QR code URL"/><p></p>
+                        <label>Quiz question: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizQuestion" name="quizQuestion" placeholder="Where did the painter live?"/><p></p>
+                        <label>The correct answer: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizRightAnswere" name="quizAnswere1" placeholder="Paris"/><p></p>
+                        <label>Incorrect answer no. 1: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere1" name="quizAnswere2" placeholder="London"/><p></p>
+                        <label>Incorrect answer no. 2: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere2" name="quizAnswere3" placeholder="Budapest"/><p></p>
+                        <label>Incorrect answer no. 3: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere3" name="quizAnswere4" placeholder="Brussels"/><p></p>
                         <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
                         <input type="reset" name="reset" value="Reset">
                     </form>
