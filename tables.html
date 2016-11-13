@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Exhibition Explorer - Admin Website</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>-->
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/live/3.1/firebase.js"></script>
+
+    <script type="text/javascript">
+
+        const config = {
+            apiKey: "AIzaSyCI7-M6yXNHFRN9X9u46MfGfX8w_iQg5J8",
+            authDomain: "exhibition-explorer.firebaseapp.com",
+            databaseURL: "https://exhibition-explorer.firebaseio.com",
+            storageBucket: "exhibition-explorer.appspot.com",
+            messagingSenderId: "266289738891"
+        };
+
+        firebase.initializeApp(config);
+
+
+        function toggleSignOut() {
+            firebase.auth().signOut();
+            window.location = "index.html";
+        }
+
+        function getArtifacts(){
+            var artifactTable = document.getElementById('artifactTable');
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artifactSnapshot) {
+                    var artifact = artifactSnapshot.val();
+                    //console.log(username.name);
+                    /*console.log(artifact.name);
+                    console.log(artifact.description);
+                    console.log(artifact.beaconID);
+                    console.log(artifact.imageURL);
+                    console.log(artifact.qrURL);*/
+
+
+                    var exhibName = "failed to find name";
+                    var exhibID=artifact.inExhibition;
+                    firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+
+                        snapshot.forEach(function(exhibSnapshot) {
+                            var exhib = exhibSnapshot.val();
+                            //console.log(exhibSnapshot.key);
+                            if(exhibSnapshot.key == exhibID){
+                                exhibName = exhib.name;
+                            }
+                        });
+
+                    var row = "<tr>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.name + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'>" + artifact.description + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibName + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.beaconID + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifact.imageURL + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifact.qrURL + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 20%;'>" + artifact.quiz + "</td>\
+                                </tr>";
+                    $("#artifactTable").append(row);
+                    });
+                });
+
+            });
+
+        }
+
+        function getExhibitions(){
+            var artifactTable = document.getElementById('artifactTable');
+            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(exhibitionSnapshot) {
+                    var exhibition = exhibitionSnapshot.val();
+
+                    var qrAllowed ="dunno";
+                    var beaconAllowed ="dunno";
+                    var quizAllowed ="dunno";
+                    if(exhibition.qr == true)
+                        qrAllowed = "allowed";
+                    else
+                        qrAllowed = "not allowed";
+
+                    if(exhibition.beacon == true)
+                        beaconAllowed = "allowed";
+                    else
+                        beaconAllowed = "not allowed";
+
+                    if(exhibition.quiz == true)
+                        quizAllowed = "allowed";
+                    else
+                        quizAllowed = "not allowed";
+
+                    var row = "<tr>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibition.name + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 30%;max-width: 30%;'>" + exhibition.description + " </div></td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + exhibition.imageURL + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibition.openDuration + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + qrAllowed + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beaconAllowed+ "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + quizAllowed + "</td>\
+                                </tr>";
+                    $("#exhibitionTable").append(row);
+                });
+
+            });
+
+        }
+
+        function initApp() {
+            getArtifacts();
+            getExhibitions();
+            document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
+            document.getElementById('quickstart-logout').disabled = false;
+        }
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</head>
+
+<body>
+
+<div id="wrapper">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="admin.html">Exhibition Explorer Admin</a>
+        </div>
+        <!-- Top Menu Items -->
+        <ul class="nav navbar-right top-nav">
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i> Admin <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="#" id="quickstart-logout"><i class="fa fa-fw fa-power-off"></i> Log Out</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav side-nav">
+                <li class="active">
+                    <a href="tables.html"><i class="fa fa-fw fa-bar-chart-o"></i> Tables</a>
+                </li>
+                <li>
+                    <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
+                </li>
+                <li>
+                    <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
+                </li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </nav>
+
+    <div id="page-wrapper">
+
+        <div class="container-fluid">
+
+            <!-- Page Heading -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        Exhibitions
+                    </h1>
+                    <ol class="breadcrumb">
+                        <li>
+                            <i class="fa fa-dashboard"></i>  <a href="admin.html">Dashboard</a>
+                        </li>
+                        <li class="active">
+                            <i class="fa fa-edit"></i> Tables
+                        </li>
+                    </ol>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <h3>Artifacts</h3>
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th data-field="name">Name</th>
+                            <th data-field="description">Description</th>
+                            <th data-field="inExhibition">Exhibition</th>
+                            <th data-field="beaconID">BeaconID</th>
+                            <th data-field="imageURL">Image URL</th>
+                            <th data-field="qrURL">QR code URL</th>
+                            <th data-field="quiz">Quiz</th>
+                        </tr>
+                        <tbody id ="artifactTable"></tbody>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            <!-- /.row -->
+            <div class="row table-scrollable">
+                <div class="col-lg-6">
+                    <h3>Exhibitions</h3>
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr style="word-wrap: break-word;min-height:200px;max-height:200px;overflow: scroll;">
+                            <th data-field="name">Name</th>
+                            <th data-field="description">Description</th>
+                            <th data-field="imageURL">Image URL</th>
+                            <th data-field="openDuration">Open Duration</th>
+                            <th data-field="qr">QR code</th>
+                            <th data-field="beacon">IBeacon</th>
+                            <th data-field="quiz">Quiz</th>
+                        </tr>
+                        <tbody id ="exhibitionTable"></tbody>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        <!-- /.container-fluid -->
+
+    </div>
+    <!-- /#page-wrapper -->
+
+</div>
+    <!-- /#wrapper -->
+
+<!-- jQuery -->
+<script src="js/jquery.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="js/bootstrap.min.js"></script>
+
+
+</body>
+</html>

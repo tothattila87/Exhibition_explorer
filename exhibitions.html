@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Exhibition Explorer - Admin Website</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>-->
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/live/3.1/firebase.js"></script>
+
+    <script type="text/javascript">
+
+        const config = {
+            apiKey: "AIzaSyCI7-M6yXNHFRN9X9u46MfGfX8w_iQg5J8",
+            authDomain: "exhibition-explorer.firebaseapp.com",
+            databaseURL: "https://exhibition-explorer.firebaseio.com",
+            storageBucket: "exhibition-explorer.appspot.com",
+            messagingSenderId: "266289738891"
+        };
+
+        firebase.initializeApp(config);
+
+
+        function toggleSignOut() {
+            firebase.auth().signOut();
+            window.location = "index.html";
+        }
+
+        function getData(){
+
+            var exhibNames = [];
+            var mySelect = document.getElementById('mySelect');
+            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+
+                snapshot.forEach(function(exhibSnapshot) {
+                    var exhib = exhibSnapshot.val();
+                    //console.log(username.name);
+                    exhibNames.push(exhib.name);
+                    //console.log(exhibSnapshot.key);
+                    var option = document.createElement("option");
+                    option.text = exhib.name;
+                    mySelect.add(option);
+
+                });
+
+            });
+        }
+
+        function addExhibition(){
+            var artifactsHere = null;
+            var beacon = $("#beacon").is(":checked");
+            var description = document.getElementById("description").value;
+            var imageURL = document.getElementById("imageURL").value;
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            var inMuseum = "-KWO1Armv7uzGNQ3ZegX";  //HARDKÓDOLTAM A MŰZEUM KULCSOT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            var name = document.getElementById("name").value;
+            var openDuration = document.getElementById("openDuration").value;
+            var qr = $("#qr").is(":checked");
+            var quiz = $("#quiz").is(":checked");
+
+            console.log(name);
+
+            var nameAlreadyExists = false;
+
+            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+
+                snapshot.forEach(function(exhibSnapshot) {
+                    var exhib = exhibSnapshot.val();
+                    //console.log(username.name);
+
+                    if(exhib.name == name){
+                        nameAlreadyExists = true;
+                    }
+
+                });
+                if(name == ""){
+                    alert("You must add a name for your exhibition. Name must be unique.")
+                    return;
+                }
+                if(nameAlreadyExists == true){
+                    alert("There is already an existing exhibition with the given name. Name must be unique.")
+                    return;
+                }
+
+                var exhibData = {
+                    artifactsHere: artifactsHere,
+                    name: name,
+                    description: description,
+                    imageURL: imageURL,
+                    openDuration: openDuration,
+                    inMuseum: inMuseum,
+                    beacon:beacon,
+                    qr:qr,
+                    quiz:quiz,
+                };
+
+                var newUserKey = firebase.database().ref().child('exhibitions').push().key;
+
+                var updateMuseum = {};
+                updateMuseum['/museums/-KWO1Armv7uzGNQ3ZegX/exhibitionsHere/' + newUserKey] = true;
+                firebase.database().ref().update(updateMuseum);
+
+                // Write the new post's data simultaneously in the posts list and the user's post list.
+                var updates = {};
+                updates['/exhibitions/' + newUserKey] = exhibData;
+
+                document.getElementById('name').value = "";
+                document.getElementById('description').value = "";
+                document.getElementById('openDuration').value = "";
+                document.getElementById('imageURL').value = "";
+                document.getElementById('beacon').checked = false;
+                document.getElementById('qr').checked = false;
+                document.getElementById('quiz').checked = false;
+
+                return firebase.database().ref().update(updates);
+
+            });
+        }
+
+        function addMuseum(){
+            var address = "1146 Budapest, Dózsa György út 41.";
+            var description = "A budapesti Szépművészeti Múzeum 1906. december 1-jén, Ferenc József osztrák császár és magyar király jelenlétében nyitotta meg kapuit. Története ekkor már bő egy évszázados múltra tekintett vissza, hiszen az 1896-ban elhatározott múzeumalapítással a magyar főúri és egyházi gyűjtőknek a 18-19. században kialakított kol­lekcióit egyesítették az új múzeumépületben.";
+            var imageURL = "https://www.google.hu/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=0ahUKEwiW-d2rlPTPAhXHthQKHZu_AS4QjRwIBw&url=http%3A%2F%2Fbudapest.varosom.hu%2Flatnivalok%2Fmuzeum%2FSzepmuveszeti-Muzeum.html&psig=AFQjCNFw0icTPwmdmbZy5KPogBrTYIKn3Q&ust=1477423170123982";
+            var name = "Szépművészeti";
+            var exhibitionsHere = null;
+            var museumData = {
+                name: name,
+                description: description,
+                imageURL: imageURL,
+                address: address,
+                exhibitionsHere: exhibitionsHere,
+            };
+
+            var newUserKey = firebase.database().ref().child('museums').push().key;
+
+            // Write the new post's data simultaneously in the posts list and the user's post list.
+            var updates = {};
+            updates['/museums/' + newUserKey] = museumData;
+
+            return firebase.database().ref().update(updates);
+
+        }
+
+        function initApp() {
+            document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
+
+            document.getElementById('quickstart-upload').addEventListener('click', addExhibition, true);
+
+        }
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</head>
+
+<body>
+
+<div id="wrapper">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="admin.html">Exhibition Explorer Admin</a>
+        </div>
+        <!-- Top Menu Items -->
+        <ul class="nav navbar-right top-nav">
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i> Admin <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="#" id="quickstart-logout"><i class="fa fa-fw fa-power-off"></i> Log Out</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav side-nav">
+                <li>
+                    <a href="tables.html"><i class="fa fa-fw fa-bar-chart-o"></i> Tables</a>
+                </li>
+                <li class="active">
+                    <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
+                </li>
+                <li>
+                    <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
+                </li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </nav>
+
+    <div id="page-wrapper">
+
+        <div class="container-fluid">
+
+            <!-- Page Heading -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        Exhibitions
+                    </h1>
+                    <ol class="breadcrumb">
+                        <li>
+                            <i class="fa fa-dashboard"></i>  <a href="admin.html">Dashboard</a>
+                        </li>
+                        <li class="active">
+                            <i class="fa fa-edit"></i> Exhibitions
+                        </li>
+                    </ol>
+                </div>
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-6">
+
+                    <form role="form">
+                        <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/><p></p>
+                        <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Description"/><p></p>
+                        <label>Open Duration: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="openDuration" name="openDuration" placeholder="Open Duration"/><p></p>
+                        <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/><p></p>
+                        <label>BeaconID: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="beacon" name="beaconID"/><p></p>
+                        <label>QR Code: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="qr" name="qr"/><p></p>
+                        <label>Quiz Question: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="quiz" name="Quiz"/><p></p>
+                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+
+
+        <!-- /.container-fluid -->
+
+    </div>
+
+</div>
+<!-- /#wrapper -->
+
+<!-- jQuery -->
+<script src="js/jquery.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

@@ -127,6 +127,49 @@
 
         }
 
+        function changeInputFields(){
+            var exhibition = document.getElementById('mySelect');
+            var exhibName = exhibition.options[exhibition.selectedIndex].text;
+            var exhibID="failed to find ID";
+
+
+            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+
+                snapshot.forEach(function(exhibSnapshot) {
+                    var exhib = exhibSnapshot.val();
+                    //console.log(exhibSnapshot.key);
+                    if(exhib.name == exhibName){
+                        exhibID = exhibSnapshot.key;
+                        if(exhib.beacon == true)
+                            document.getElementById('beaconID').disabled = false;
+                        else
+                            document.getElementById('beaconID').disabled = true;
+
+                        if(exhib.qr == true)
+                            document.getElementById('qrURL').disabled = false;
+                        else
+                            document.getElementById('qrURL').disabled = true;
+
+                        if(exhib.quiz == true){
+                            document.getElementById('quizQuestion').disabled = false;
+                            document.getElementById('quizRightAnswere').disabled = false;
+                            document.getElementById('quizFalseAnswere1').disabled = false;
+                            document.getElementById('quizFalseAnswere2').disabled = false;
+                            document.getElementById('quizFalseAnswere3').disabled = false;
+                        }
+                        else{
+                            document.getElementById('quizQuestion').disabled = true;
+                            document.getElementById('quizRightAnswere').disabled = true;
+                            document.getElementById('quizFalseAnswere1').disabled = true;
+                            document.getElementById('quizFalseAnswere2').disabled = true;
+                            document.getElementById('quizFalseAnswere3').disabled = true;
+                        }
+                    }
+
+                });
+            });
+        }
+
         function addArtifact() {
             // A post entry.
             var description = document.getElementById('description').value;
@@ -144,6 +187,11 @@
             var exhibition = document.getElementById('mySelect');
             var exhibName = exhibition.options[exhibition.selectedIndex].text;
             var exhibID="failed to find ID";
+
+            var exhibBeacon;
+            var exhibQR;
+            var exhibQuiz;
+
             firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
 
                 snapshot.forEach(function(exhibSnapshot) {
@@ -151,9 +199,51 @@
                     //console.log(exhibSnapshot.key);
                     if(exhib.name == exhibName){
                         exhibID = exhibSnapshot.key;
+
+                        if(exhib.qr == true)
+                            exhibQR = true;
+                        else
+                            exhibQR = false;
+
+                        if(exhib.beacon == true)
+                            exhibBeacon = true;
+                        else
+                            exhibBeacon = false;
+
+                        if(exhib.quiz == true)
+                            exhibQuiz = true;
+                        else
+                            exhibQuiz = false;
                     }
                 });
                 //console.log(exhibID);
+
+                if(exhibBeacon == true && beaconID==""){
+                    alert("for this exhibition you must add a BeaconID");
+                    return;
+                }
+
+                if(exhibQR == true && QRcode==""){
+                    alert("for this exhibition you must add a QR Code");
+                    return;
+                }
+
+                if(exhibQuiz == true && QuizQuestion==""){
+                    alert("for this exhibition you must add a Quiz Question");
+                    return;
+                }
+
+                var tempQuiz;
+                if(QuizRightAnswere == "" || QuizFalseAnswere2 == "" || QuizFalseAnswere3 == "" || QuizFalseAnswere1 == "" )
+                    tempQuiz = false;
+                else
+                    tempQuiz=true;
+
+                if(exhibQuiz == true && tempQuiz==false){
+                    alert("for this exhibition you must add every Quiz Answeres");
+                    return;
+                }
+
                 var artifactData = {
                     name: name,
                     description: description,
@@ -163,6 +253,7 @@
                     qrURL: QRcode,
                     quiz: quiz,
                 };
+
 
                 // Get a key for a new Post.
                 var newUserKey = firebase.database().ref().child('artifacts').push().key;
@@ -175,8 +266,28 @@
                 var updates = {};
                 updates['/artifacts/' + newUserKey] = artifactData;
 
+                document.getElementById('description').value = "";
+                document.getElementById('name').value = "";
+                document.getElementById('beaconID').value = "";
+
+                document.getElementById('imageURL').value = "";
+                document.getElementById('qrURL').value = "";
+                document.getElementById('quizQuestion').value = "";
+                document.getElementById('quizRightAnswere').value = "";
+                document.getElementById('quizFalseAnswere1').value = "";
+                document.getElementById('quizFalseAnswere2').value = "";
+                document.getElementById('quizFalseAnswere3').value = "";
+                document.getElementById('mySelect').selectedIndex=0;
+
+                document.getElementById('quizQuestion').disabled = true;
+                document.getElementById('quizRightAnswere').disabled = true;
+                document.getElementById('quizFalseAnswere1').disabled = true;
+                document.getElementById('quizFalseAnswere2').disabled = true;
+                document.getElementById('quizFalseAnswere3').disabled = true;
+                document.getElementById('qrURL').disabled = true;
+                document.getElementById('beaconID').disabled = true;
+
                 return firebase.database().ref().update(updates);
-                //window.location = "admin.html";
             });
 
             //console.log(quiz);
@@ -184,19 +295,20 @@
         }
 
         function initApp() {
-            //getData();
+            getData();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
 
-           // document.getElementById('quickstart-upload').addEventListener('click', addArtifact, true);
-            //document.getElementById('quickstart-upload').disabled = false;
+            document.getElementById('quickstart-upload').addEventListener('click', addArtifact, true);
         }
         window.onload = function() {
             initApp();
         };
     </script>
 </head>
+
 <body>
+
 <div id="wrapper">
 
     <!-- Navigation -->
@@ -231,7 +343,7 @@
                 <li>
                     <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
                 </li>
             </ul>
@@ -247,13 +359,15 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">
-                        Admin
+                        Artifacts
                     </h1>
                     <ol class="breadcrumb">
                         <li>
-                            <i class="active"></i>  <a href="admin.html">Dashboard</a>
+                            <i class="fa fa-dashboard"></i>  <a href="admin.html">Dashboard</a>
                         </li>
-
+                        <li class="active">
+                            <i class="fa fa-edit"></i> Artifacts
+                        </li>
                     </ol>
                 </div>
             </div>
@@ -261,13 +375,36 @@
 
             <div class="row">
                 <div class="col-lg-6">
-                    <h3>Welcome to the Exhibition Explorer - Admin Website</h3>
-                    <p>You can check your tables in the "Tables" menu where all your artifacts and exhibitions are. Also you can add new exhibitions at the Exhibition menu...</p>
+
+                    <form role="form">
+
+                        <label>Choose Exhibition: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="exhibitionID" name="exhibitionID">
+                            <select id="mySelect" onchange="changeInputFields();">
+                                <option value="" disabled selected defaultSelected>Choose Exhibition</option>
+
+                            </select>
+                        </div>
+                        <p></p>
+                        <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/><p></p>
+                        <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Description"/><p></p>
+                        <label>BeaconID: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="beaconID" name="beaconID" placeholder="BeaconID"/><p></p>
+                        <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/><p></p>
+                        <label>QR Code URL: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="qrURL" name="qrURL" placeholder="QR code URL"/><p></p>
+                        <label>Quiz Question: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizQuestion" name="quizQuestion" placeholder="Quiz question"/><p></p>
+                        <label>Quiz Right Answere: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizRightAnswere" name="quizAnswere1" placeholder="Quiz answere1"/><p></p>
+                        <label>Quiz False Answere 1: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere1" name="quizAnswere2" placeholder="Quiz answere2"/><p></p>
+                        <label>Quiz False Answere 2: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere2" name="quizAnswere3" placeholder="Quiz answere3"/><p></p>
+                        <label>Quiz False Answere 3: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere3" name="quizAnswere4" placeholder="Quiz answere4"/><p></p>
+                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
                 </div>
             </div>
+        </div>
             <!-- /.row -->
 
-        </div>
+
         <!-- /.container-fluid -->
 
     </div>
@@ -283,47 +420,5 @@
 <script src="js/bootstrap.min.js"></script>
 
 </body>
+
 </html>
-<!--
-<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
-    <header class="mdl-layout__header mdl-color-text--white mdl-color--light-blue-700">
-        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-            <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--8-col-desktop">
-                <div class="mdl-layout__header-row mdl-cell">
-                    <h3>Exhibition explorer Admin Website</h3>
-                </div>
-                <div class="mdl-cell"></div>
-                <div class="mdl-cell"></div>
-                <div class="mdl-cell"></div>
-                <div class="mdl-cell">
-                    <button disabled class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" id="quickstart-logout" name="logout">Log out</button>
-                </div>
-            </div>
-        </div>
-    </header>
-    <main class="mdl-layout__content mdl-color--grey-100">
-        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-
-
-            <div class="mdl-card mdl-shadow--2dp mdl-cell ">
-                <div>Choose Exhibition: &nbsp;&nbsp;&nbsp;<div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="exhibitionID" name="exhibitionID">
-                    <select id="mySelect">
-                        <option value="" disabled selected>Choose Exhibition</option>
-
-                    </select>
-                </div></div>
-                <div>Name: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/></div>
-                <div>Description: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Description"/></div>
-                <div>BeaconID: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="beaconID" name="beaconID" placeholder="BeaconID"/></div>
-                <div>Image URL: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/></div>
-                <div>QR Code URL: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="qrURL" name="qrURL" placeholder="QR code URL"/></div>
-                <div>Quiz Question: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizQuestion" name="quizQuestion" placeholder="Quiz question"/></div>
-                <div>Quiz Right Answere: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizRightAnswere" name="quizAnswere1" placeholder="Quiz answere1"/></div>
-                <div>Quiz False Answere 1: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere1" name="quizAnswere2" placeholder="Quiz answere2"/></div>
-                <div>Quiz False Answere 2: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere2" name="quizAnswere3" placeholder="Quiz answere3"/></div>
-                <div>Quiz False Answere 3: &nbsp;&nbsp;&nbsp;<input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere3" name="quizAnswere4" placeholder="Quiz answere4"/></div>
-                <button disabled class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload">Upload</button>
-            </div>
-        </div>
-    </main>
-</div>-->
