@@ -47,18 +47,19 @@
 
         function getData(){
             var mySelect = document.getElementById('mySelect');
-            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
 
-                snapshot.forEach(function(exhibSnapshot) {
-                    var exhib = exhibSnapshot.val();
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artSnapshot) {
+                    var art = artSnapshot.val();
+                    var key = art.artifactID;
                     var creator = firebase.auth().currentUser.uid;
-                    if(creator == exhib.creatorID){
+                    //console.log(creator + " - " + art.creatorID);
+                    if(creator == art.creatorID){
                         var option = document.createElement("option");
-                        option.text = exhib.name;
+                        option.text = key + " - " + art.name;
                         mySelect.add(option);
                     }
                 });
-
             });
         }
 
@@ -124,176 +125,129 @@
 
         }
 
-        function changeInputFields(){
-            var exhibition = document.getElementById('mySelect');
-            var exhibName = exhibition.options[exhibition.selectedIndex].text;
-            var exhibID="failed to find ID";
+        function checkboxClick(cb){
+            //alert("Clicked, new value = " + firebase.auth().currentUser.uid);
+            var mySelect = document.getElementById('mySelect');
 
+            if(cb.checked == true){
+                mySelect.options.length = 0;
+                var opt = document.createElement("option");
+                opt.text = "Choose Artifact";
+                opt.disabled = true;
+                opt.selected = true;
+                opt.defaults = true;
+                mySelect.add(opt);
 
-            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+                var artifactsWithBeacons = [];
 
-                snapshot.forEach(function(exhibSnapshot) {
-                    var exhib = exhibSnapshot.val();
-                    //console.log(exhibSnapshot.key);
-                    if(exhib.name == exhibName){
-                        exhibID = exhibSnapshot.key;
-
-                        if(exhib.qr == true)
-                            document.getElementById('qrURL').disabled = false;
-                        else
-                            document.getElementById('qrURL').disabled = true;
-
-                        if(exhib.quiz == true){
-                            document.getElementById('quizQuestion').disabled = false;
-                            document.getElementById('quizRightAnswere').disabled = false;
-                            document.getElementById('quizFalseAnswere1').disabled = false;
-                            document.getElementById('quizFalseAnswere2').disabled = false;
-                            document.getElementById('quizFalseAnswere3').disabled = false;
+                firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(beaconSnapshot) {
+                        var beacon = beaconSnapshot.val();
+                        if(beacon.artifactId != ""){
+                            artifactsWithBeacons.push(beacon.artifactId);
                         }
-                        else{
-                            document.getElementById('quizQuestion').disabled = true;
-                            document.getElementById('quizRightAnswere').disabled = true;
-                            document.getElementById('quizFalseAnswere1').disabled = true;
-                            document.getElementById('quizFalseAnswere2').disabled = true;
-                            document.getElementById('quizFalseAnswere3').disabled = true;
-                        }
-                    }
-
+                    });
                 });
-            });
+                firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(artSnapshot) {
+                        var art = artSnapshot.val();
+                        var key = artSnapshot.key;
+                        var hasBeacon = false;
+                        for(var i = 0 ; i <= artifactsWithBeacons.length; i++){
+                            if(key == artifactsWithBeacons[i]){
+                                hasBeacon= true;
+                            }
+                        }
+                        var creator = firebase.auth().currentUser.uid;
+                        if(hasBeacon == false && creator == art.creatorID){
+                            var option = document.createElement("option");
+                            option.text = art.artifactID+ " - " + art.name;
+                            mySelect.add(option);
+                        }
+                    });
+                });
+            }
+            else{
+                mySelect.options.length = 0;
+                var opt = document.createElement("option");
+                opt.text = "Choose Artifact";
+                opt.disabled = true;
+                opt.selected = true;
+                opt.defaults = true;
+                mySelect.add(opt);
+                getData();
+            }
+
         }
 
-        function addArtifact() {
+        function addBeacon() {
             // A post entry.
-            var description = document.getElementById('description').value;
+            var location = document.getElementById('location').value;
             var name = document.getElementById('name').value;
-            var imgURL = document.getElementById('imageURL').value;
-            var QRcode = document.getElementById('qrURL').value;
-            var QuizQuestion = document.getElementById('quizQuestion').value;
-            var QuizRightAnswere = document.getElementById('quizRightAnswere').value;
-            var QuizFalseAnswere1 = document.getElementById('quizFalseAnswere1').value;
-            var QuizFalseAnswere2 = document.getElementById('quizFalseAnswere2').value;
-            var QuizFalseAnswere3 = document.getElementById('quizFalseAnswere3').value;
-            var quiz = QuizQuestion + "#*" + QuizRightAnswere + "#" + QuizFalseAnswere1 + "#" + QuizFalseAnswere2 + "#" + QuizFalseAnswere3;
+
+            var artifact = document.getElementById('mySelect');
+            var artName = artifact.options[artifact.selectedIndex].text;
+            var artID="";
 
             var creator = firebase.auth().currentUser.uid;
 
-            var exhibition = document.getElementById('mySelect');
-            var exhibName = exhibition.options[exhibition.selectedIndex].text;
-            var exhibID="failed to find ID";
-
-            var exhibQR;
-            var exhibQuiz;
-
-            var lastID;
-            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
-                snapshot.forEach(function(artifactSnapshot) {
-                    var artifact = artifactSnapshot.val();
-                    lastID = artifact.artifactID;
-                    console.log(lastID);
+            var lastID = 0;
+            firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(beaconSnapshot) {
+                    lastID = beaconSnapshot.key;
+                   // console.log(lastID);
                 });
-
-                firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
-
-                    snapshot.forEach(function(exhibSnapshot) {
-                        var exhib = exhibSnapshot.val();
-                        //console.log(exhibSnapshot.key);
-                        if(exhib.name == exhibName){
-                            exhibID = exhibSnapshot.key;
-
-                            if(exhib.qr == true)
-                                exhibQR = true;
-                            else
-                                exhibQR = false;
-
-
-                            if(exhib.quiz == true)
-                                exhibQuiz = true;
-                            else
-                                exhibQuiz = false;
-                        }
-                    });
-                    //console.log(exhibID);
-
-
-                    if(exhibQR == true && QRcode==""){
-                        alert("This exhibition requires a QRCode to be specified!");
-                        return;
-                    }
-
-                    if(exhibQuiz == true && QuizQuestion==""){
-                        alert("This exhibition requires a quiz question to be specified!");
-                        return;
-                    }
-
-                    var tempQuiz;
-                    if(QuizRightAnswere == "" || QuizFalseAnswere2 == "" || QuizFalseAnswere3 == "" || QuizFalseAnswere1 == "" )
-                        tempQuiz = false;
-                    else
-                        tempQuiz=true;
-
-                    if(exhibQuiz == true && tempQuiz==false){
-                        alert("This exhibition requires a quiz answers to be specified!");
-                        return;
-                    }
-
-                    if(exhibQuiz == false){
-                        quiz = "-";
-                    }
-
-                    if(exhibQR == false){
-                        QRcode = "-";
-                    }
-
-                    var lastIDNumber = parseInt(lastID);
-
-                    var artifactData = {
-                        name: name,
-                        description: description,
-                        inExhibition: exhibID,
-                        imageURL: imgURL,
-                        qrURL: QRcode,
-                        artifactID: lastIDNumber,
-                        creatorID: creator,
-                        quiz: quiz,
-                    };
-
-
-                    // Get a key for a new Post.
-                    var newUserKey = firebase.database().ref().child('artifacts').push().key;
-
-                    var updateMExhibition = {};
-                    updateMExhibition['/exhibitions/'+exhibID+'/artifactsHere/' + newUserKey] = true;
-                    firebase.database().ref().update(updateMExhibition);
-
-                    // Write the new post's data simultaneously in the posts list and the user's post list.
-                    var updates = {};
-                    updates['/artifacts/' + newUserKey] = artifactData;
-
-                    document.getElementById('description').value = "";
-                    document.getElementById('name').value = "";
-
-                    document.getElementById('imageURL').value = "";
-                    document.getElementById('qrURL').value = "";
-                    document.getElementById('quizQuestion').value = "";
-                    document.getElementById('quizRightAnswere').value = "";
-                    document.getElementById('quizFalseAnswere1').value = "";
-                    document.getElementById('quizFalseAnswere2').value = "";
-                    document.getElementById('quizFalseAnswere3').value = "";
-                    document.getElementById('mySelect').selectedIndex=0;
-
-                    document.getElementById('quizQuestion').disabled = true;
-                    document.getElementById('quizRightAnswere').disabled = true;
-                    document.getElementById('quizFalseAnswere1').disabled = true;
-                    document.getElementById('quizFalseAnswere2').disabled = true;
-                    document.getElementById('quizFalseAnswere3').disabled = true;
-                    document.getElementById('qrURL').disabled = true;
-
-                    return firebase.database().ref().update(updates);
-                });
-
             });
 
+
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+
+                snapshot.forEach(function(artSnapshot) {
+                    var art = artSnapshot.val();
+                    var artNameTemp = art.artifactID + " - " + art.name;
+                    //console.log(exhibSnapshot.key);
+                    if(artNameTemp == artName){
+                        artID = artSnapshot.key;
+                    }
+                    //lastID = artSnapshot.key;
+                    //console.log(lastID);
+                });
+                //console.log(exhibID);
+
+
+                if(name==""){
+                    alert("The beacon requires a Name to be specified!");
+                    return;
+                }
+
+                if(location==""){
+                    alert("The beacon requires a Location to be specified!");
+                    return;
+                }
+
+                var beaconData = {
+                    beaconName: name,
+                    location: location,
+                    artifactId: artID,
+                    creatorID: creator,
+                };
+
+
+                // Get a key for a new Post.
+                var lastIDNumber = parseInt(lastID);
+                var newUserKey =  lastIDNumber + 1;//firebase.database().ref().child('artifacts').push().key;
+
+                // Write the new post's data simultaneously in the posts list and the user's post list.
+                var updates = {};
+                updates['/beacons/' + newUserKey] = beaconData;
+
+                document.getElementById('location').value = "";
+                document.getElementById('name').value = "";
+
+                document.getElementById('mySelect').selectedIndex=0;
+
+                return firebase.database().ref().update(updates);
+            });
 
             //console.log(quiz);
 
@@ -304,7 +258,7 @@
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
 
-            document.getElementById('quickstart-upload').addEventListener('click', addArtifact, true);
+            document.getElementById('quickstart-upload').addEventListener('click', addBeacon, true);
         }
         window.onload = function() {
             initApp();
@@ -351,10 +305,10 @@
                 <li>
                     <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
                 </li>
-                <li class="active">
+                <li>
                     <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="beacons.html"><i class="fa fa-fw fa-bar-chart-o"></i> Beacons</a>
                 </li>
             </ul>
@@ -377,7 +331,7 @@
                             <i class="fa fa-dashboard"></i>  <a href="admin.html">Dashboard</a>
                         </li>
                         <li class="active">
-                            <i class="fa fa-edit"></i> Artifacts
+                            <i class="fa fa-edit"></i> Beacons
                         </li>
                     </ol>
                 </div>
@@ -388,31 +342,24 @@
                 <div class="col-lg-6">
 
                     <form role="form">
-
-                        <label>Select an exhibition:: &nbsp;&nbsp;&nbsp;</label><p></p>
-                        <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="exhibitionID" name="exhibitionID">
+                        <label>List only the beaconless artifacts: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" onclick='checkboxClick(this);' style="display:inline;width:auto;" id="checkbox" name="checkbox"/><p></p>
+                        <label>Select an artifact: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="artifactID" name="artifactID">
                             <select id="mySelect" onchange="changeInputFields();">
-                                <option value="" disabled selected defaultSelected>Choose Exhibition</option>
+                                <option value="" disabled selected defaultSelected>Choose Artifact</option>
 
                             </select>
                         </div>
                         <p></p>
                         <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/><p></p>
-                        <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Description"/><p></p>
-                        <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/><p></p>
-                        <label>QR code URL: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="qrURL" name="qrURL" placeholder="QR code URL"/><p></p>
-                        <label>Quiz question: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizQuestion" name="quizQuestion" placeholder="Where did the painter live?"/><p></p>
-                        <label>The correct answer: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizRightAnswere" name="quizAnswere1" placeholder="Paris"/><p></p>
-                        <label>Incorrect answer no. 1: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere1" name="quizAnswere2" placeholder="London"/><p></p>
-                        <label>Incorrect answer no. 2: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere2" name="quizAnswere3" placeholder="Budapest"/><p></p>
-                        <label>Incorrect answer no. 3: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere3" name="quizAnswere4" placeholder="Brussels"/><p></p>
+                        <label>Location: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="location" name="location" placeholder="2. floor"/><p></p>
                         <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
                         <input type="reset" name="reset" value="Reset">
                     </form>
                 </div>
             </div>
         </div>
-            <!-- /.row -->
+        <!-- /.row -->
 
 
         <!-- /.container-fluid -->

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Exhibition Explorer - Dashboard</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>-->
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/live/3.1/firebase.js"></script>
+
+    <script type="text/javascript">
+
+        const config = {
+            apiKey: "AIzaSyCI7-M6yXNHFRN9X9u46MfGfX8w_iQg5J8",
+            authDomain: "exhibition-explorer.firebaseapp.com",
+            databaseURL: "https://exhibition-explorer.firebaseio.com",
+            storageBucket: "exhibition-explorer.appspot.com",
+            messagingSenderId: "266289738891"
+        };
+
+        firebase.initializeApp(config);
+
+
+        function toggleSignOut() {
+            firebase.auth().signOut();
+            window.location = "index.html";
+        }
+
+        function getData(){
+            var mySelect = document.getElementById('mySelect');
+
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artSnapshot) {
+                    var art = artSnapshot.val();
+                    var key = art.artifactID;
+                    var creator = firebase.auth().currentUser.uid;
+                    //console.log(creator + " - " + art.creatorID);
+                    if(creator == art.creatorID){
+                        var option = document.createElement("option");
+                        option.text = key + " - " + art.name;
+                        mySelect.add(option);
+                    }
+                });
+            });
+        }
+
+        function addExhibition(){
+            var artifactsHere = null;
+            var beacon = true;
+            var description = " A közel 4000 művet számláló Egyiptomi Gyűjtemény Közép-Európa egyik leggazdagabb kollekciója, ahol a fáraók korának művészetével találkozhatunk. Egyúttal a Szépművészeti Múzeum egyetlen gyűjteménye, mely magyar ásatásból származó tárgyakkal is büszkélkedhet. A múlt század elején magyar-lengyel expedíció folytatott ásatásokat Közép-Egyiptomban, 1964-ben pedig a széleskörű nemzetközi összefogással megvalósult núbiai leletmentő akció, majd az 1983-as thébai feltárásoknak köszönhet sokat a gyűjtemény. Az állandó kiállításon olyan kiváló alkotásokat láthatunk, mint az i.e. 9. században készült Sesonk trónörökös szobra, az i.e. 3. századi bronz Ülő macska, vagy a múlt évben vásárolt, négyezer éves vízilóagyarból faragott, mágikus erővel felruházott Varázsbot.";
+            var imageURL = "http://www.szepmuveszeti.hu/data/cikk/96/cikk_96/JOD_3659_fill_278x160.jpg";
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            var inMuseum = "-KWO1Armv7uzGNQ3ZegX";  //HARDKÓDOLTAM A MŰZEUM KULCSOT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            var name = "Nem Egyiptomi Gyűjtemény";
+            var openDuration = "2014.05.04 - 2015.05.04";
+            var qr = true;
+            var quiz = true;
+
+            var exhibData = {
+                artifactsHere: artifactsHere,
+                name: name,
+                description: description,
+                imageURL: imageURL,
+                openDuration: openDuration,
+                inMuseum: inMuseum,
+                beacon:beacon,
+                qr:qr,
+                quiz:quiz,
+            };
+
+            var newUserKey = firebase.database().ref().child('exhibitions').push().key;
+
+            var updateMuseum = {};
+            updateMuseum['/museums/-KWO1Armv7uzGNQ3ZegX/exhibitionsHere/' + newUserKey] = true;
+            firebase.database().ref().update(updateMuseum);
+
+            // Write the new post's data simultaneously in the posts list and the user's post list.
+            var updates = {};
+            updates['/exhibitions/' + newUserKey] = exhibData;
+
+            return firebase.database().ref().update(updates);
+        }
+
+        function addMuseum(){
+            var nameIsAlreadyExists = false;
+            var creator = firebase.auth().currentUser.uid;
+            var address = document.getElementById('address').value;
+            var description = document.getElementById('description').value;
+            var imageURL = document.getElementById('imageURL').value;
+            var name = document.getElementById('name').value;
+            var exhibitionsHere = null;
+            var museumData = {
+                name: name,
+                description: description,
+                creatorID: creator,
+                imageURL: imageURL,
+                address: address,
+                exhibitionsHere: exhibitionsHere,
+            };
+            firebase.database().ref('/museums/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(museumSnapshot) {
+                    var museum = museumSnapshot.val();
+                    if(creator == museum.creatorID){
+                        if(name == museum.name){
+                            nameIsAlreadyExists = true;
+                        }
+                    }
+                });
+                if(nameIsAlreadyExists){
+                    alert("There is already exists a Museum by this name");
+                    return;
+                }
+                if(name == ""){
+                    alert("Museums requires a name to be specified!");
+                    return;
+                }
+                if(address == ""){
+                    alert("Museums requires an address to be specified!");
+                    return;
+                }
+                var newUserKey = firebase.database().ref().child('museums').push().key;
+
+                // Write the new post's data simultaneously in the posts list and the user's post list.
+                var updates = {};
+                updates['/museums/' + newUserKey] = museumData;
+
+                document.getElementById('name').value = "";
+                document.getElementById('address').value = "";
+                document.getElementById('description').value = "";
+                document.getElementById('imageURL').value = "";
+
+                return firebase.database().ref().update(updates);
+            });
+        }
+
+        function checkboxClick(cb){
+            //alert("Clicked, new value = " + firebase.auth().currentUser.uid);
+            var mySelect = document.getElementById('mySelect');
+
+            if(cb.checked == true){
+                mySelect.options.length = 0;
+                var opt = document.createElement("option");
+                opt.text = "Choose Artifact";
+                opt.disabled = true;
+                opt.selected = true;
+                opt.defaults = true;
+                mySelect.add(opt);
+
+                var artifactsWithBeacons = [];
+
+                firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(beaconSnapshot) {
+                        var beacon = beaconSnapshot.val();
+                        if(beacon.artifactId != ""){
+                            artifactsWithBeacons.push(beacon.artifactId);
+                        }
+                    });
+                });
+                firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(artSnapshot) {
+                        var art = artSnapshot.val();
+                        var key = artSnapshot.key;
+                        var hasBeacon = false;
+                        for(var i = 0 ; i <= artifactsWithBeacons.length; i++){
+                            if(key == artifactsWithBeacons[i]){
+                                hasBeacon= true;
+                            }
+                        }
+                        var creator = firebase.auth().currentUser.uid;
+                        if(hasBeacon == false && creator == art.creatorID){
+                            var option = document.createElement("option");
+                            option.text = art.artifactID+ " - " + art.name;
+                            mySelect.add(option);
+                        }
+                    });
+                });
+            }
+            else{
+                mySelect.options.length = 0;
+                var opt = document.createElement("option");
+                opt.text = "Choose Artifact";
+                opt.disabled = true;
+                opt.selected = true;
+                opt.defaults = true;
+                mySelect.add(opt);
+                getData();
+            }
+
+        }
+
+        function addBeacon() {
+            // A post entry.
+            var location = document.getElementById('location').value;
+            var name = document.getElementById('name').value;
+
+            var artifact = document.getElementById('mySelect');
+            var artName = artifact.options[artifact.selectedIndex].text;
+            var artID="";
+
+            var creator = firebase.auth().currentUser.uid;
+
+            var lastID = 0;
+            firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(beaconSnapshot) {
+                    lastID = beaconSnapshot.key;
+                    console.log(lastID);
+                });
+            });
+
+
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+
+                snapshot.forEach(function(artSnapshot) {
+                    var art = artSnapshot.val();
+                    var artNameTemp = art.artifactID + " - " + art.name;
+                    //console.log(exhibSnapshot.key);
+                    if(artNameTemp == artName){
+                        artID = artSnapshot.key;
+                    }
+                    //lastID = artSnapshot.key;
+                    //console.log(lastID);
+                });
+                //console.log(exhibID);
+
+
+                if(name==""){
+                    alert("The beacon requires a Name to be specified!");
+                    return;
+                }
+
+                if(location==""){
+                    alert("The beacon requires a Location to be specified!");
+                    return;
+                }
+
+                var beaconData = {
+                    beaconName: name,
+                    location: location,
+                    artifactId: artID,
+                    creatorID: creator,
+                };
+
+
+                // Get a key for a new Post.
+                var lastIDNumber = parseInt(lastID);
+                var newUserKey =  lastIDNumber + 1;//firebase.database().ref().child('artifacts').push().key;
+
+                // Write the new post's data simultaneously in the posts list and the user's post list.
+                var updates = {};
+                updates['/beacons/' + newUserKey] = beaconData;
+
+                document.getElementById('location').value = "";
+                document.getElementById('name').value = "";
+
+                document.getElementById('mySelect').selectedIndex=0;
+
+                return firebase.database().ref().update(updates);
+            });
+
+            //console.log(quiz);
+
+        }
+
+        function initApp() {
+            //getData();
+            document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
+            document.getElementById('quickstart-logout').disabled = false;
+
+            document.getElementById('quickstart-upload').addEventListener('click', addMuseum, true);
+        }
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</head>
+
+<body>
+
+<div id="wrapper">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="admin.html">Exhibition Explorer Admin</a>
+        </div>
+        <!-- Top Menu Items -->
+        <ul class="nav navbar-right top-nav">
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i> Admin <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="#" id="quickstart-logout"><i class="fa fa-fw fa-power-off"></i> Log Out</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav side-nav">
+                <li>
+                    <a href="tables.html"><i class="fa fa-fw fa-bar-chart-o"></i> Tables</a>
+                </li>
+                <li class="active">
+                    <a href="museums.html"><i class="fa fa-fw fa-bar-chart-o"></i> Museums</a>
+                </li>
+                <li>
+                    <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
+                </li>
+                <li>
+                    <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
+                </li>
+                <li>
+                    <a href="beacons.html"><i class="fa fa-fw fa-bar-chart-o"></i> Beacons</a>
+                </li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </nav>
+
+    <div id="page-wrapper">
+
+        <div class="container-fluid">
+
+            <!-- Page Heading -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        Museums
+                    </h1>
+                    <ol class="breadcrumb">
+                        <li>
+                            <i class="fa fa-dashboard"></i>  <a href="admin.html">Dashboard</a>
+                        </li>
+                        <li class="active">
+                            <i class="fa fa-edit"></i> Museums
+                        </li>
+                    </ol>
+                </div>
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-6">
+
+                    <form role="form">
+                        <p></p>
+                        <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/><p></p>
+                        <label>Address: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="address" name="address" placeholder="Budapest Kossuth street 1."/><p></p>
+                        <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="description" name="description" placeholder="Description"/><p></p>
+                        <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/><p></p>
+                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+
+
+        <!-- /.container-fluid -->
+
+    </div>
+    <!-- /#page-wrapper -->
+
+</div>
+<!-- /#wrapper -->
+
+<!-- jQuery -->
+<script src="js/jquery.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

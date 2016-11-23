@@ -46,20 +46,18 @@
         }
 
         function getData(){
-
-            var exhibNames = [];
             var mySelect = document.getElementById('mySelect');
-            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+            firebase.database().ref('/museums/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(museumSnapshot) {
+                    var creator = firebase.auth().currentUser.uid;
 
-                snapshot.forEach(function(exhibSnapshot) {
-                    var exhib = exhibSnapshot.val();
-                    //console.log(username.name);
-                    exhibNames.push(exhib.name);
-                    //console.log(exhibSnapshot.key);
-                    var option = document.createElement("option");
-                    option.text = exhib.name;
-                    mySelect.add(option);
+                    var museum = museumSnapshot.val();
 
+                    if(creator == museum.creatorID){
+                        var option = document.createElement("option");
+                        option.text = museum.name;
+                        mySelect.add(option);
+                    }
                 });
 
             });
@@ -70,71 +68,87 @@
             var beacon = $("#beacon").is(":checked");
             var description = document.getElementById("description").value;
             var imageURL = document.getElementById("imageURL").value;
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            var inMuseum = "-KWO1Armv7uzGNQ3ZegX";  //HARDKÓDOLTAM A MŰZEUM KULCSOT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            var creator = firebase.auth().currentUser.uid;
+
             var name = document.getElementById("name").value;
             var openDuration = document.getElementById("openDuration").value;
             var qr = $("#qr").is(":checked");
             var quiz = $("#quiz").is(":checked");
 
-            console.log(name);
-
             var nameAlreadyExists = false;
 
-            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+            var museum = document.getElementById('mySelect');
+            var museumName = museum.options[museum.selectedIndex].text;
+            var inMuseum="";
 
-                snapshot.forEach(function(exhibSnapshot) {
-                    var exhib = exhibSnapshot.val();
-                    //console.log(username.name);
+            firebase.database().ref('/museums/').once('value').then(function(snapshot) {
 
-                    if(exhib.name == name){
-                        nameAlreadyExists = true;
+                snapshot.forEach(function (museumSnapshot) {
+                    var mus = museumSnapshot.val();
+
+                    if (mus.name == museumName) {
+                        inMuseum = museumSnapshot.key;
                     }
 
                 });
-                if(name == ""){
-                    alert("You must add a name for your exhibition. Name must be unique.")
-                    return;
-                }
-                if(nameAlreadyExists == true){
-                    alert("There is already an existing exhibition with the given name. Name must be unique.")
-                    return;
-                }
 
-                var exhibData = {
-                    artifactsHere: artifactsHere,
-                    name: name,
-                    description: description,
-                    imageURL: imageURL,
-                    openDuration: openDuration,
-                    inMuseum: inMuseum,
-                    beacon:beacon,
-                    qr:qr,
-                    quiz:quiz,
-                };
+                firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
 
-                var newUserKey = firebase.database().ref().child('exhibitions').push().key;
+                    snapshot.forEach(function(exhibSnapshot) {
+                        var exhib = exhibSnapshot.val();
+                        //console.log(username.name);
 
-                var updateMuseum = {};
-                updateMuseum['/museums/-KWO1Armv7uzGNQ3ZegX/exhibitionsHere/' + newUserKey] = true;
-                firebase.database().ref().update(updateMuseum);
+                        if(exhib.name == name){
+                            nameAlreadyExists = true;
+                        }
 
-                // Write the new post's data simultaneously in the posts list and the user's post list.
-                var updates = {};
-                updates['/exhibitions/' + newUserKey] = exhibData;
+                    });
+                    if(name == ""){
+                        alert("You must add a name for your exhibition. Name must be unique.")
+                        return;
+                    }
+                    if(nameAlreadyExists == true){
+                        alert("There is already an existing exhibition with the given name. Name must be unique.")
+                        return;
+                    }
 
-                document.getElementById('name').value = "";
-                document.getElementById('description').value = "";
-                document.getElementById('openDuration').value = "";
-                document.getElementById('imageURL').value = "";
-                document.getElementById('beacon').checked = false;
-                document.getElementById('qr').checked = false;
-                document.getElementById('quiz').checked = false;
+                    var exhibData = {
+                        artifactsHere: artifactsHere,
+                        name: name,
+                        description: description,
+                        creatorID: creator,
+                        imageURL: imageURL,
+                        openDuration: openDuration,
+                        inMuseum: inMuseum,
+                        beacon:beacon,
+                        qr:qr,
+                        quiz:quiz,
+                    };
 
-                return firebase.database().ref().update(updates);
+                    var newUserKey = firebase.database().ref().child('exhibitions').push().key;
+
+                    var updateMuseum = {};
+                    updateMuseum['/museums/'+ inMuseum +'/exhibitionsHere/' + newUserKey] = true;
+                    firebase.database().ref().update(updateMuseum);
+
+                    // Write the new post's data simultaneously in the posts list and the user's post list.
+                    var updates = {};
+                    updates['/exhibitions/' + newUserKey] = exhibData;
+
+                    document.getElementById('name').value = "";
+                    document.getElementById('description').value = "";
+                    document.getElementById('openDuration').value = "";
+                    document.getElementById('imageURL').value = "";
+                    document.getElementById('beacon').checked = false;
+                    document.getElementById('qr').checked = false;
+                    document.getElementById('quiz').checked = false;
+
+                    return firebase.database().ref().update(updates);
+
+                });
 
             });
+
         }
 
         function addMuseum(){
@@ -162,6 +176,8 @@
         }
 
         function initApp() {
+            getData();
+
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
 
             document.getElementById('quickstart-upload').addEventListener('click', addExhibition, true);
@@ -206,11 +222,17 @@
                 <li>
                     <a href="tables.html"><i class="fa fa-fw fa-bar-chart-o"></i> Tables</a>
                 </li>
+                <li>
+                    <a href="museums.html"><i class="fa fa-fw fa-bar-chart-o"></i> Museums</a>
+                </li>
                 <li class="active">
                     <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
                 </li>
                 <li>
                     <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
+                </li>
+                <li>
+                    <a href="beacons.html"><i class="fa fa-fw fa-bar-chart-o"></i> Beacons</a>
                 </li>
             </ul>
         </div>
@@ -243,6 +265,14 @@
                 <div class="col-lg-6">
 
                     <form role="form">
+                        <label>Select a museum: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="museumID" name="museumID">
+                            <select id="mySelect" onchange="changeInputFields();">
+                                <option value="" disabled selected defaultSelected>Choose Museum</option>
+
+                            </select>
+                        </div>
+                        <p></p>
                         <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Egyptian collection"/><p></p>
                         <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Detailed description of the exhibition."/><p></p>
                         <label>Open duration: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="openDuration" name="openDuration" placeholder="2016.05.13-25"/><p></p>

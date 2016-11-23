@@ -56,31 +56,31 @@
                     console.log(artifact.beaconID);
                     console.log(artifact.imageURL);
                     console.log(artifact.qrURL);*/
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == artifact.creatorID){
+                        var exhibName = "failed to find name";
+                        var exhibID=artifact.inExhibition;
+                        firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
 
+                            snapshot.forEach(function(exhibSnapshot) {
+                                var exhib = exhibSnapshot.val();
+                                //console.log(exhibSnapshot.key);
+                                if(exhibSnapshot.key == exhibID){
+                                    exhibName = exhib.name;
+                                }
+                            });
 
-                    var exhibName = "failed to find name";
-                    var exhibID=artifact.inExhibition;
-                    firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
-
-                        snapshot.forEach(function(exhibSnapshot) {
-                            var exhib = exhibSnapshot.val();
-                            //console.log(exhibSnapshot.key);
-                            if(exhibSnapshot.key == exhibID){
-                                exhibName = exhib.name;
-                            }
-                        });
-
-                    var row = "<tr>\
+                            var row = "<tr>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.name + "</td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'>" + artifact.description + "</td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibName + "</td>\
-                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.beaconID + "</td>\
                                     <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifact.imageURL + "</td>\
                                     <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifact.qrURL + "</td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 20%;'>" + artifact.quiz + "</td>\
                                 </tr>";
-                    $("#artifactTable").append(row);
-                    });
+                            $("#artifactTable").append(row);
+                        });
+                    }
                 });
 
             });
@@ -93,25 +93,27 @@
                 snapshot.forEach(function(exhibitionSnapshot) {
                     var exhibition = exhibitionSnapshot.val();
 
-                    var qrAllowed ="dunno";
-                    var beaconAllowed ="dunno";
-                    var quizAllowed ="dunno";
-                    if(exhibition.qr == true)
-                        qrAllowed = "allowed";
-                    else
-                        qrAllowed = "not allowed";
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == exhibition.creatorID){
+                        var qrAllowed ="dunno";
+                        var beaconAllowed ="dunno";
+                        var quizAllowed ="dunno";
+                        if(exhibition.qr == true)
+                            qrAllowed = "allowed";
+                        else
+                            qrAllowed = "not allowed";
 
-                    if(exhibition.beacon == true)
-                        beaconAllowed = "allowed";
-                    else
-                        beaconAllowed = "not allowed";
+                        if(exhibition.beacon == true)
+                            beaconAllowed = "allowed";
+                        else
+                            beaconAllowed = "not allowed";
 
-                    if(exhibition.quiz == true)
-                        quizAllowed = "allowed";
-                    else
-                        quizAllowed = "not allowed";
+                        if(exhibition.quiz == true)
+                            quizAllowed = "allowed";
+                        else
+                            quizAllowed = "not allowed";
 
-                    var row = "<tr>\
+                        var row = "<tr>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibition.name + "</td>\
                                     <td style='word-wrap: break-word;min-width: 30%;max-width: 30%;'>" + exhibition.description + " </div></td>\
                                     <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + exhibition.imageURL + "</td>\
@@ -120,7 +122,8 @@
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beaconAllowed+ "</td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + quizAllowed + "</td>\
                                 </tr>";
-                    $("#exhibitionTable").append(row);
+                        $("#exhibitionTable").append(row);
+                    }
                 });
 
             });
@@ -173,10 +176,16 @@
                     <a href="tables.html"><i class="fa fa-fw fa-bar-chart-o"></i> Tables</a>
                 </li>
                 <li>
+                    <a href="museums.html"><i class="fa fa-fw fa-bar-chart-o"></i> Museums</a>
+                </li>
+                <li>
                     <a href="exhibitions.html"><i class="fa fa-fw fa-edit"></i> Exhibitions</a>
                 </li>
                 <li>
                     <a href="artifacts.html"><i class="fa fa-fw fa-bar-chart-o"></i> Artifacts</a>
+                </li>
+                <li>
+                    <a href="beacons.html"><i class="fa fa-fw fa-bar-chart-o"></i> Beacons</a>
                 </li>
             </ul>
         </div>
@@ -212,7 +221,6 @@
                             <th data-field="name">Name</th>
                             <th data-field="description">Description</th>
                             <th data-field="inExhibition">Exhibition</th>
-                            <th data-field="beaconID">BeaconID</th>
                             <th data-field="imageURL">Image URL</th>
                             <th data-field="qrURL">QR code URL</th>
                             <th data-field="quiz">Quiz</th>
