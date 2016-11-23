@@ -63,6 +63,17 @@
             });
         }
 
+        function checkboxClick(cb){
+            var beaconRegion = document.getElementById('beaconRegion');
+            if(cb.checked == true){
+                beaconRegion.disabled=false;
+            }
+            else{
+                beaconRegion.value="";
+                beaconRegion.disabled=true;
+            }
+        }
+
         function addExhibition(){
             var artifactsHere = null;
             var beacon = $("#beacon").is(":checked");
@@ -77,6 +88,7 @@
 
             var nameAlreadyExists = false;
 
+            var beaconRegion = document.getElementById('beaconRegion').value;
             var museum = document.getElementById('mySelect');
             var museumName = museum.options[museum.selectedIndex].text;
             var inMuseum="";
@@ -111,6 +123,10 @@
                         alert("There is already an existing exhibition with the given name. Name must be unique.")
                         return;
                     }
+                    if(beacon == true && beaconRegion ==""){
+                        alert("If iBeacon is enabled, then you must add an iBeacon Region.")
+                        return;
+                    }
 
                     var exhibData = {
                         artifactsHere: artifactsHere,
@@ -119,6 +135,7 @@
                         creatorID: creator,
                         imageURL: imageURL,
                         openDuration: openDuration,
+                        beaconRegion: beaconRegion,
                         inMuseum: inMuseum,
                         beacon:beacon,
                         qr:qr,
@@ -139,6 +156,7 @@
                     document.getElementById('description').value = "";
                     document.getElementById('openDuration').value = "";
                     document.getElementById('imageURL').value = "";
+                    document.getElementById('beaconRegion').value = "";
                     document.getElementById('beacon').checked = false;
                     document.getElementById('qr').checked = false;
                     document.getElementById('quiz').checked = false;
@@ -277,11 +295,12 @@
                         <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="description" name="description" placeholder="Detailed description of the exhibition."/><p></p>
                         <label>Open duration: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="openDuration" name="openDuration" placeholder="2016.05.13-25"/><p></p>
                         <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="http://xy.com/myimage.jpg"/><p></p>
-                        <label>Are iBeacons enabled?: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="beacon" name="beaconID"/><p></p>
+                        <label>Are iBeacons enabled?: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" onclick='checkboxClick(this);' class="mdl-textfield__input" style="display:inline;width:auto;" id="beacon" name="beaconID"/><p></p>
+                        <label>iBeacon region: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="beaconRegion" name="beaconRegion" placeholder="a000b111-222c-33d4-eee5-666f7777777f"/><p></p>
                         <label>Are QR codes enabled?: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="qr" name="qr"/><p></p>
                         <label>Are quiz questions enabled?: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="quiz" name="Quiz"/><p></p>
                         <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
-                        <input type="reset" name="reset" value="Reset">
+                        <input type="reset" name="reset" value="Reset" onclick='checkboxClick(this);'>
                     </form>
                 </div>
             </div>

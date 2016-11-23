@@ -62,65 +62,41 @@
             });
         }
 
-        function addExhibition(){
-            var artifactsHere = null;
-            var beacon = true;
-            var description = " A közel 4000 művet számláló Egyiptomi Gyűjtemény Közép-Európa egyik leggazdagabb kollekciója, ahol a fáraók korának művészetével találkozhatunk. Egyúttal a Szépművészeti Múzeum egyetlen gyűjteménye, mely magyar ásatásból származó tárgyakkal is büszkélkedhet. A múlt század elején magyar-lengyel expedíció folytatott ásatásokat Közép-Egyiptomban, 1964-ben pedig a széleskörű nemzetközi összefogással megvalósult núbiai leletmentő akció, majd az 1983-as thébai feltárásoknak köszönhet sokat a gyűjtemény. Az állandó kiállításon olyan kiváló alkotásokat láthatunk, mint az i.e. 9. században készült Sesonk trónörökös szobra, az i.e. 3. századi bronz Ülő macska, vagy a múlt évben vásárolt, négyezer éves vízilóagyarból faragott, mágikus erővel felruházott Varázsbot.";
-            var imageURL = "http://www.szepmuveszeti.hu/data/cikk/96/cikk_96/JOD_3659_fill_278x160.jpg";
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            var inMuseum = "-KWO1Armv7uzGNQ3ZegX";  //HARDKÓDOLTAM A MŰZEUM KULCSOT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            var name = "Nem Egyiptomi Gyűjtemény";
-            var openDuration = "2014.05.04 - 2015.05.04";
-            var qr = true;
-            var quiz = true;
+        function getArtifacts(){
+            var artifactTable = document.getElementById('artifactTable');
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artifactSnapshot) {
+                    var artifact = artifactSnapshot.val();
 
-            var exhibData = {
-                artifactsHere: artifactsHere,
-                name: name,
-                description: description,
-                imageURL: imageURL,
-                openDuration: openDuration,
-                inMuseum: inMuseum,
-                beacon:beacon,
-                qr:qr,
-                quiz:quiz,
-            };
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == artifact.creatorID){
+                        var exhibName = "failed to find name";
+                        var exhibID=artifact.inExhibition;
+                        firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
 
-            var newUserKey = firebase.database().ref().child('exhibitions').push().key;
+                            snapshot.forEach(function(exhibSnapshot) {
+                                var exhib = exhibSnapshot.val();
+                                //console.log(exhibSnapshot.key);
+                                if(exhibSnapshot.key == exhibID){
+                                    exhibName = exhib.name;
+                                }
+                            });
 
-            var updateMuseum = {};
-            updateMuseum['/museums/-KWO1Armv7uzGNQ3ZegX/exhibitionsHere/' + newUserKey] = true;
-            firebase.database().ref().update(updateMuseum);
+                            var row = "<tr>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.artifactID + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.name + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.description + "</div></td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibName + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.imageURL + "</div></td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.qrURL + "</div></td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.quiz + "</div></td>\
+                                </tr>";
+                            $("#artifactTable").append(row);
+                        });
+                    }
+                });
 
-            // Write the new post's data simultaneously in the posts list and the user's post list.
-            var updates = {};
-            updates['/exhibitions/' + newUserKey] = exhibData;
-
-            return firebase.database().ref().update(updates);
-        }
-
-        function addMuseum(){
-            var address = "1146 Budapest, Dózsa György út 41.";
-            var description = "A budapesti Szépművészeti Múzeum 1906. december 1-jén, Ferenc József osztrák császár és magyar király jelenlétében nyitotta meg kapuit. Története ekkor már bő egy évszázados múltra tekintett vissza, hiszen az 1896-ban elhatározott múzeumalapítással a magyar főúri és egyházi gyűjtőknek a 18-19. században kialakított kol­lekcióit egyesítették az új múzeumépületben.";
-            var imageURL = "https://www.google.hu/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=0ahUKEwiW-d2rlPTPAhXHthQKHZu_AS4QjRwIBw&url=http%3A%2F%2Fbudapest.varosom.hu%2Flatnivalok%2Fmuzeum%2FSzepmuveszeti-Muzeum.html&psig=AFQjCNFw0icTPwmdmbZy5KPogBrTYIKn3Q&ust=1477423170123982";
-            var name = "Szépművészeti";
-            var exhibitionsHere = null;
-            var museumData = {
-                name: name,
-                description: description,
-                imageURL: imageURL,
-                address: address,
-                exhibitionsHere: exhibitionsHere,
-            };
-
-            var newUserKey = firebase.database().ref().child('museums').push().key;
-
-            // Write the new post's data simultaneously in the posts list and the user's post list.
-            var updates = {};
-            updates['/museums/' + newUserKey] = museumData;
-
-            return firebase.database().ref().update(updates);
+            });
 
         }
 
@@ -245,7 +221,7 @@
                         QRcode = "-";
                     }
 
-                    var lastIDNumber = parseInt(lastID);
+                    var lastIDNumber = parseInt(lastID) + 1;
 
                     var artifactData = {
                         name: name,
@@ -301,6 +277,7 @@
 
         function initApp() {
             getData();
+            getArtifacts();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
 
@@ -385,7 +362,7 @@
             <!-- /.row -->
 
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-3">
 
                     <form role="form">
 
@@ -409,6 +386,24 @@
                         <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
                         <input type="reset" name="reset" value="Reset">
                     </form>
+                </div>
+                <div class="col-lg-9">
+                    <h1>Artifacts</h1>
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th data-field="artifactID">Artifact ID</th>
+                            <th data-field="artifactName">Artifact Name</th>
+                            <th data-field="description">Description</th>
+                            <th data-field="exhibName">Exhibition Name</th>
+                            <th data-field="imgURL">Image URL</th>
+                            <th data-field="qrURL">QR Code URL</th>
+                            <th data-field="quiz">Quiz</th>
+                        </tr>
+                        <tbody id ="artifactTable"></tbody>
+                        </thead>
+                    </table>
+
                 </div>
             </div>
         </div>

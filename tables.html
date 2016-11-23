@@ -50,12 +50,7 @@
             firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(artifactSnapshot) {
                     var artifact = artifactSnapshot.val();
-                    //console.log(username.name);
-                    /*console.log(artifact.name);
-                    console.log(artifact.description);
-                    console.log(artifact.beaconID);
-                    console.log(artifact.imageURL);
-                    console.log(artifact.qrURL);*/
+
                     var creator = firebase.auth().currentUser.uid;
                     if(creator == artifact.creatorID){
                         var exhibName = "failed to find name";
