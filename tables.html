@@ -67,11 +67,11 @@
 
                             var row = "<tr>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artifact.name + "</td>\
-                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'>" + artifact.description + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.description + "</div></td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibName + "</td>\
-                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifact.imageURL + "</td>\
-                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifact.qrURL + "</td>\
-                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 20%;'>" + artifact.quiz + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.imageURL + "</div></td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.qrURL + "</div></td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 20%;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + artifact.quiz + "</div></td>\
                                 </tr>";
                             $("#artifactTable").append(row);
                         });
@@ -110,8 +110,8 @@
 
                         var row = "<tr>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibition.name + "</td>\
-                                    <td style='word-wrap: break-word;min-width: 30%;max-width: 30%;'>" + exhibition.description + " </div></td>\
-                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + exhibition.imageURL + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 30%;max-width: 30%;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + exhibition.description + " </div></td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + exhibition.imageURL + "</div></td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + exhibition.openDuration + "</td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + qrAllowed + "</td>\
                                     <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beaconAllowed+ "</td>\
@@ -125,9 +125,83 @@
 
         }
 
+        function getMuseums(){
+            var artifactTable = document.getElementById('artifactTable');
+            firebase.database().ref('/museums/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(museumSnapshot) {
+                    var museum = museumSnapshot.val();
+
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == museum.creatorID){
+                        var row = "<tr>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + museum.name + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + museum.address + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + museum.description + "</div></td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'><div style='overflow:scroll; width:100%;max-height: 80px'>" + museum.imageURL + "</div></td>\
+                                </tr>";
+                        $("#museumTable").append(row);
+                    }
+                });
+            });
+        }
+
+        function getBeaconTable(){
+            var beaconTable = document.getElementById('beaconTable');
+            firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(beaconSnapshot) {
+                    var beacon = beaconSnapshot.val();
+
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == beacon.creatorID){
+                        var artifactName = "failed to find name";
+                        var artifactID = beacon.artifactId;
+                        var artID;
+                        var non = "non";
+                        if(artifactID == ""){
+                            var row = "<tr>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beaconSnapshot.key + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beacon.beaconName + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'>" + beacon.location + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + non + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + non+ "</td>\
+                                </tr>";
+                            $("#beaconTable").append(row);
+                        }
+                        else{
+                            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+
+                                snapshot.forEach(function(artifactSnapshot) {
+                                    var artifact = artifactSnapshot.val();
+                                    //console.log(exhibSnapshot.key);
+                                    if(artifactSnapshot.key == artifactID){
+                                        artifactName = artifact.name;
+                                        artID = artifact.artifactID;
+                                        console.log(artifactName + " - " + artID + " - " + artifactID);
+                                    }
+                                });
+
+                                var row = "<tr>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beaconSnapshot.key  + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + beacon.beaconName + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 30%;'>" + beacon.location + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 10%;max-width: 10%;'>" + artID + "</td>\
+                                    <td style='word-wrap: break-word;min-width: 160px;max-width: 160px;'>" + artifactName+ "</td>\
+                                </tr>";
+                                $("#beaconTable").append(row);
+                            });
+                        }
+                    }
+                });
+
+            });
+
+        }
+
         function initApp() {
             getArtifacts();
             getExhibitions();
+            getMuseums();
+            getBeaconTable();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
         }
@@ -208,7 +282,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-12">
                     <h3>Artifacts</h3>
                     <table class="table table-responsive">
                         <thead>
@@ -226,8 +300,8 @@
                 </div>
             </div>
             <!-- /.row -->
-            <div class="row table-scrollable">
-                <div class="col-lg-6">
+            <div class="row">
+                <div class="col-lg-12">
                     <h3>Exhibitions</h3>
                     <table class="table table-responsive">
                         <thead>
@@ -245,7 +319,40 @@
                     </table>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <h3>Museums</h3>
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th data-field="name">Name</th>
+                            <th data-field="address">Address</th>
+                            <th data-field="description">Description</th>
+                            <th data-field="imageURL">Image URL</th>
+                        </tr>
+                        <tbody id ="museumTable"></tbody>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <h3>iBeacons</h3>
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th data-field="beaconID">iBeacon ID</th>
+                            <th data-field="beaconName">iBeacon Name</th>
+                            <th data-field="location">Location</th>
+                            <th data-field="artifactID">Artifact ID</th>
+                            <th data-field="artifactName">Artifact Name</th>
+                        </tr>
+                        <tbody id ="beaconTable"></tbody>
+                        </thead>
+                    </table>
 
+                </div>
+            </div>
         </div>
         <!-- /.container-fluid -->
 
