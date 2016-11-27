@@ -45,11 +45,54 @@
             window.location = "index.html";
         }
 
+        function changeInputType(cb){
+            //console.log("itt");
+            if(cb.checked == true){
+                document.getElementById('quickstart-add').style.display = "none";
+                document.getElementById('quickstart-update').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "inline-block";
+                document.getElementById('artifactID').style.display = "inline-block";
+                document.getElementById('sortor').style.display = "inline-block";
+
+                document.getElementById('qrURL').disabled = false;
+
+                document.getElementById('quizQuestion').disabled = false;
+                document.getElementById('quizRightAnswere').disabled = false;
+                document.getElementById('quizFalseAnswere1').disabled = false;
+                document.getElementById('quizFalseAnswere2').disabled = false;
+                document.getElementById('quizFalseAnswere3').disabled = false;
+
+            }
+            else{
+                document.getElementById('quickstart-update').style.display = "none";
+                document.getElementById('quickstart-add').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "none";
+                document.getElementById('artifactID').style.display = "none";
+                document.getElementById('sortor').style.display = "none";
+
+                document.getElementById('qrURL').disabled = true;
+
+                document.getElementById('quizQuestion').disabled = true;
+                document.getElementById('quizRightAnswere').disabled = true;
+                document.getElementById('quizFalseAnswere1').disabled = true;
+                document.getElementById('quizFalseAnswere2').disabled = true;
+                document.getElementById('quizFalseAnswere3').disabled = true;
+            }
+        }
+
+        function changeInputFieldsReset(){
+            document.getElementById('switchID').checked = false;
+            document.getElementById('quickstart-update').style.display = "none";
+            document.getElementById('quickstart-add').style.display = "inline-block";
+            document.getElementById('myLabel').style.display = "none";
+            document.getElementById('artifactID').style.display = "none";
+            document.getElementById('sortor').style.display = "none";
+        }
+
         function getData(){
             var mySelect = document.getElementById('mySelect');
             mySelect.options.length = 1;
             firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
-
                 snapshot.forEach(function(exhibSnapshot) {
                     var exhib = exhibSnapshot.val();
                     var creator = firebase.auth().currentUser.uid;
@@ -59,7 +102,25 @@
                         mySelect.add(option);
                     }
                 });
+            });
+            var mySelectArtifact = document.getElementById('mySelectArtifact');
+            mySelectArtifact.options.length = 1;
+            var mySelectDelete = document.getElementById('mySelectDelete');
+            mySelectDelete.options.length = 1;
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artifactSnapshot) {
+                    var artifact = artifactSnapshot.val();
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == artifact.creatorID){
+                        var option = document.createElement("option");
+                        option.text = artifact.artifactID + "." + artifact.name;
+                        mySelectArtifact.add(option);
 
+                        var option1 = document.createElement("option");
+                        option1.text = artifact.artifactID + "." + artifact.name;
+                        mySelectDelete.add(option1);
+                    }
+                });
             });
         }
 
@@ -280,6 +341,334 @@
 
         }
 
+        function updateArtifact(){
+            var creator = firebase.auth().currentUser.uid;
+            var artifact = document.getElementById('mySelectArtifact');
+            var artifactIDAndName = artifact.options[artifact.selectedIndex].text;
+            var artifactSplits = artifactIDAndName.split(".");
+            var artifactID = artifactSplits[0];
+            var artifactName = artifactSplits[1];
+            //console.log(artifactID + " - " + artifactName);
+            var artifactKey="";
+
+            if(artifactName == "Choose Artifact"){
+                alert("To update an Artifact , you must select one.")
+                return;
+            }
+
+            var fb = firebase.database().ref();
+
+            var descriptionNew = document.getElementById('description').value;
+            var nameNew = document.getElementById('name').value;
+            var imgURLNew = document.getElementById('imageURL').value;
+            var QRcodeNew = document.getElementById('qrURL').value;
+            var inExhibitionNew;
+            var QuizQuestion = document.getElementById('quizQuestion').value;
+            var QuizRightAnswere = document.getElementById('quizRightAnswere').value;
+            var QuizFalseAnswere1 = document.getElementById('quizFalseAnswere1').value;
+            var QuizFalseAnswere2 = document.getElementById('quizFalseAnswere2').value;
+            var QuizFalseAnswere3 = document.getElementById('quizFalseAnswere3').value;
+            var quizNew = QuizQuestion + "#*" + QuizRightAnswere + "#" + QuizFalseAnswere1 + "#" + QuizFalseAnswere2 + "#" + QuizFalseAnswere3;
+
+            var exhibition = document.getElementById('mySelect');
+            var exhibName = exhibition.options[exhibition.selectedIndex].text;
+
+            var exhibQR;
+            var exhibQuiz;
+
+            var name = "";
+            var description = "";
+            var imageURL = "";
+            var inExhibition = "";
+            var quiz = "-";
+            var QRcode = "-";
+
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artifactSnapshot) {
+                    if(artifactSnapshot.val().creatorID == creator){
+                        if(artifactSnapshot.val().artifactID == artifactID){
+                            artifactKey = artifactSnapshot.key;
+                            var art = artifactSnapshot.val();
+                            name = art.name;
+                            description = art.description;
+                            imageURL = art.imageURL;
+                            inExhibition = art.inExhibition;
+                            quiz = art.quiz;
+                            QRcode = art.qrURL;
+
+                            if(exhibName == "Choose Exhibition"){
+                                inExhibitionNew = inExhibition;
+                            }
+
+                            firebase.database().ref('/exhibitions/').once('value').then(function(ssnapshot) {
+                                ssnapshot.forEach(function(exhibitionSnapshot) {
+                                    var exhibit = exhibitionSnapshot.val();
+
+                                    if(exhibName == exhibit.name){
+                                        inExhibitionNew = exhibitionSnapshot.key;
+                                        if(exhibit.qr == true)
+                                            exhibQR = true;
+                                        else
+                                            exhibQR = false;
+
+
+                                        if(exhibit.quiz == true)
+                                            exhibQuiz = true;
+                                        else
+                                            exhibQuiz = false;
+                                    }
+
+                                    if(exhibName == "Choose Exhibition" && inExhibitionNew == exhibitionSnapshot.key){
+                                        if(exhibit.qr == true)
+                                            exhibQR = true;
+                                        else
+                                            exhibQR = false;
+
+
+                                        if(exhibit.quiz == true)
+                                            exhibQuiz = true;
+                                        else
+                                            exhibQuiz = false;
+                                    }
+                                });
+
+                                if(exhibQR == true && QRcodeNew=="" && QRcode == "-"){
+                                    alert("This exhibition requires a QRCode to be specified!");
+                                    return;
+                                }
+                                if(exhibQR == true && QRcodeNew=="" && QRcode != "-"){
+                                    QRcodeNew = QRcode;
+                                }
+
+                                if(quiz == "-" && exhibQuiz == true){
+                                    if(QuizQuestion==""){
+                                        alert("This exhibition requires a quiz question to be specified!");
+                                        return;
+                                    }
+                                    var tempQuiz;
+                                    if(QuizRightAnswere == "" || QuizFalseAnswere2 == "" || QuizFalseAnswere3 == "" || QuizFalseAnswere1 == ""){
+                                        tempQuiz = false;
+                                    }
+                                    else
+                                        tempQuiz=true;
+
+                                    if(exhibQuiz == true && tempQuiz==false){
+                                        alert("This exhibition requires all quiz answers to be specified!");
+                                        return;
+                                    }
+                                }
+                                if(quiz != "-" && exhibQuiz == true){
+                                    //var quizNew = QuizQuestion + "#*" + QuizRightAnswere + "#" + QuizFalseAnswere1 + "#" + QuizFalseAnswere2 + "#" + QuizFalseAnswere3;
+                                    var quizTomb = quiz.split("#");
+                                    var quizQuestionOld = quizTomb[0];
+                                    var quizRightAnswereOld = quizTomb[1];
+                                    var quizFalseAnswere1Old = quizTomb[2];
+                                    var quizFalseAnswere2Old = quizTomb[3];
+                                    var quizFalseAnswere3Old = quizTomb[4];
+
+                                    var tempQuizString = "";
+                                    if(QuizQuestion!=""){
+                                        tempQuizString += QuizQuestion;
+                                    }
+                                    else{
+                                        tempQuizString += quizQuestionOld;
+                                    }
+
+                                    if(QuizRightAnswere != ""){
+                                        tempQuizString += "#*" + QuizRightAnswere;
+                                    }
+                                    else{
+                                        tempQuizString += "#" + quizRightAnswereOld;
+                                    }
+
+                                    if(QuizFalseAnswere1 != ""){
+                                        tempQuizString += "#" + QuizFalseAnswere1;
+                                    }
+                                    else{
+                                        tempQuizString += "#" + quizFalseAnswere1Old;
+                                    }
+
+                                    if(QuizFalseAnswere2 != ""){
+                                        tempQuizString += "#" + QuizFalseAnswere2;
+                                    }
+                                    else{
+                                        tempQuizString += "#" + quizFalseAnswere2Old;
+                                    }
+
+                                    if(QuizFalseAnswere3 != ""){
+                                        tempQuizString += "#" + QuizFalseAnswere3;
+                                    }
+                                    else{
+                                        tempQuizString += "#" + quizFalseAnswere3Old;
+                                    }
+
+                                    quizNew = tempQuizString;
+                                }
+
+                                if(exhibQuiz == false){
+                                    console.log("faszom");
+                                    quizNew = "-";
+                                }
+
+                                if(exhibQR == false){
+                                    QRcode = "-";
+                                }
+
+                                if(nameNew == ""){
+                                    nameNew = name;
+                                }
+                                if(descriptionNew == ""){
+                                    descriptionNew = description;
+                                }
+                                if(imgURLNew == ""){
+                                    imgURLNew = imageURL;
+                                }
+
+                                if(exhibName != "Choose Exhibition"){
+                                    var oldExhibitionID = inExhibition;
+                                    var newExhibitionID = inExhibitionNew;
+
+                                    var exh = fb.child('/exhibitions/');
+                                    var oldExh = exh.child(oldExhibitionID);
+                                    var oldExhArt = oldExh.child('/artifactsHere/');
+                                    var oldExhActualArt = oldExhArt.child(artifactKey);
+                                    oldExhActualArt.remove();
+
+                                    var updateExhib = {};
+                                    updateExhib['/exhibitions/'+ newExhibitionID +'/artifactsHere/' + artifactKey] = true;
+                                    firebase.database().ref().update(updateExhib);
+
+                                    var artifactData = {
+                                        artifactID: artifactID,
+                                        name: nameNew,
+                                        description: descriptionNew,
+                                        creatorID: creator,
+                                        imageURL: imgURLNew,
+                                        inExhibition: newExhibitionID,
+                                        qrURL: QRcode,
+                                        quiz: quizNew,
+                                    };
+
+                                    var newUserKey = artifactKey;
+
+                                    // Write the new post's data simultaneously in the posts list and the user's post list.
+
+                                    var updates = {};
+                                    updates['/artifacts/' + newUserKey] = artifactData;
+                                    firebase.database().ref().update(updates);
+                                }
+                                else{
+                                    var artifactData = {
+                                        artifactID: artifactID,
+                                        name: nameNew,
+                                        description: descriptionNew,
+                                        creatorID: creator,
+                                        imageURL: imgURLNew,
+                                        inExhibition: inExhibitionNew,
+                                        qrURL: QRcode,
+                                        quiz: quizNew,
+                                    };
+
+                                    var newUserKey = artifactKey;
+
+                                    // Write the new post's data simultaneously in the posts list and the user's post list.
+
+                                    var updates = {};
+                                    updates['/artifacts/' + newUserKey] = artifactData;
+                                    firebase.database().ref().update(updates);
+                                }
+
+                                document.getElementById('description').value = "";
+                                document.getElementById('name').value = "";
+
+                                document.getElementById('imageURL').value = "";
+                                document.getElementById('qrURL').value = "";
+                                document.getElementById('quizQuestion').value = "";
+                                document.getElementById('quizRightAnswere').value = "";
+                                document.getElementById('quizFalseAnswere1').value = "";
+                                document.getElementById('quizFalseAnswere2').value = "";
+                                document.getElementById('quizFalseAnswere3').value = "";
+
+                                document.getElementById('mySelect').selectedIndex=0;
+                                document.getElementById('mySelectArtifact').selectedIndex=0;
+
+                                var mySwitch = document.getElementById('switchID');
+                                mySwitch.checked = false;
+
+                                changeInputType(mySwitch);
+
+                                getData();
+                                getArtifacts();
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        function deleteArtifact(){
+            //console.log("asd");
+            var creator = firebase.auth().currentUser.uid;
+            var artifact = document.getElementById('mySelectDelete');
+            var artifactNameAndId = artifact.options[artifact.selectedIndex].text;
+
+            var artifactArrayString = artifactNameAndId.split(".");
+            var artifactID = artifactArrayString[0];
+
+            var artifactKey;
+            var exhibitionKey;
+            var r = confirm("Are you sure, you want to delete the selected artifact?");
+            if (r == true) {
+                firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(artifactSnapshot) {
+                        if(artifactSnapshot.val().creatorID == creator){
+                            if(artifactSnapshot.val().artifactID == artifactID){
+                                artifactKey = artifactSnapshot.key;
+                                exhibitionKey = artifactSnapshot.val().inExhibition;
+
+                                var fb = firebase.database().ref();
+                                var arts = fb.child('/artifacts/');
+                                var art = arts.child(artifactKey);
+                                art.remove();
+
+                                var exhibition = fb.child('/exhibitions/');
+                                var actualExhibition = exhibition.child(exhibitionKey);
+                                var actualExhibitionArtHere = actualExhibition.child('/artifactsHere/');
+                                var actualExhibitionArtHereArtifact = actualExhibitionArtHere.child(artifactKey);
+                                actualExhibitionArtHereArtifact.remove();
+                            }
+                        }
+                    });
+                    firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                        snapshot.forEach(function(beaconSnapshot) {
+                                if(beaconSnapshot.val().artifactId == artifactKey){
+                                    //console.log("itt");
+                                    var beacon = beaconSnapshot.val();
+                                    var clearBeaconID = "";
+                                    var beaconData = {
+                                        beaconName: beacon.beaconName,
+                                        location: beacon.location,
+                                        creatorID: beacon.creatorID,
+                                        artifactId: clearBeaconID,
+                                    };
+                                    var newUserKey = beaconSnapshot.key;
+
+                                    var updates = {};
+                                    updates['/beacons/' + newUserKey] = beaconData;
+                                    firebase.database().ref().update(updates);
+                                }
+                        });
+                    });
+                    getArtifacts();
+                    getData();
+                    document.getElementById('mySelectDelete').selectedIndex=0;
+                });
+            }
+            else{
+                return;
+            }
+        }
+
         function initApp() {
 
             firebase.auth().onAuthStateChanged(function(user) {
@@ -293,7 +682,9 @@
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
 
-            document.getElementById('quickstart-upload').addEventListener('click', addArtifact, true);
+            document.getElementById('quickstart-add').addEventListener('click', addArtifact, true);
+            document.getElementById('quickstart-update').addEventListener('click', updateArtifact, true);
+            document.getElementById('quickstart-delete').addEventListener('click', deleteArtifact, true);
         }
         window.onload = function() {
             initApp();
@@ -376,9 +767,25 @@
             <div class="row">
                 <div class="col-lg-3">
 
-                    <form role="form">
+                    <label>Add a new</label>
+                    <label class="switch">
+                        <input type="checkbox" id="switchID" onclick="changeInputType(this);">
+                        <div class="slider round"></div>
+                    </label>
+                    <label>Update</label>
+                    <p></p>
 
-                        <label>Select an exhibition:: &nbsp;&nbsp;&nbsp;</label><p></p>
+                    <form role="form">
+                        <label style="display: none" id="myLabel">Select an Artifact: &nbsp;&nbsp;&nbsp;</label><p style="display: none" id="sortor"></p><p></p>
+                        <div class="mdl-textfield__input" style="display:none;width:auto;" type="select" id="artifactID" name="exhibitionID">
+                            <select id="mySelectArtifact">
+                                <option value="" disabled selected defaultSelected>Choose Artifact</option>
+
+                            </select>
+                        </div>
+                        <p></p>
+
+                        <label>Select an Exhibition: &nbsp;&nbsp;&nbsp;</label><p></p>
                         <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="exhibitionID" name="exhibitionID">
                             <select id="mySelect" onchange="changeInputFields();">
                                 <option value="" disabled selected defaultSelected>Choose Exhibition</option>
@@ -395,8 +802,11 @@
                         <label>Incorrect answer no. 1: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere1" name="quizAnswere2" placeholder="London"/><p></p>
                         <label>Incorrect answer no. 2: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere2" name="quizAnswere3" placeholder="Budapest"/><p></p>
                         <label>Incorrect answer no. 3: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="quizFalseAnswere3" name="quizAnswere4" placeholder="Brussels"/><p></p>
-                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
-                        <input type="reset" name="reset" value="Reset">
+                        <input type="button" style="display: none" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-update" name="update" value="Update">
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-add" name="add" value="Add new Item">
+                        <input type="reset" name="reset" value="Reset" onclick="changeInputFieldsReset();">
+                        <!--<input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
+                        <input type="reset" name="reset" value="Reset">-->
                     </form>
                 </div>
                 <div class="col-lg-9">
@@ -416,6 +826,21 @@
                         </thead>
                     </table>
 
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-3">
+                    <form>
+                        <h3>Delete an Artifact</h3>
+                        <label>Select a Artifact: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="width:auto;" type="select" id="artifactIDDelete" name="museumID">
+                            <select id="mySelectDelete">
+                                <option value="" disabled selected defaultSelected>Choose Exhibition</option>
+                            </select>
+                        </div><p></p>
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-delete" name="delete" value="Delete">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
                 </div>
             </div>
         </div>

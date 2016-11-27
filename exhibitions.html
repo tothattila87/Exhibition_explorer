@@ -355,6 +355,9 @@
                                 }
                                 if(beacon == true && beaconNew == false){
                                     beaconRegionNew="";
+
+                                    //TODO
+                                    //HA VAN ARTIFACT ÉS HOZZÁ BEACON AKKOR A BEACONBŐL KI KELL SZEDNI AZ ARTIFACT KEY-t !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                 }
 
                                 if(museumName != "Choose Museum"){
@@ -464,7 +467,7 @@
         }
 
         function deleteExhibition(){
-            console.log("asd");
+            //console.log("asd");
             var creator = firebase.auth().currentUser.uid;
             var exhibition = document.getElementById('mySelectDelete');
             var exhibitionName = exhibition.options[exhibition.selectedIndex].text;
