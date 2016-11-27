@@ -39,6 +39,11 @@
 
         firebase.initializeApp(config);
 
+        var artifactsReadedIn = false;
+        var artifactKeys = [];
+        var exhibitionKeyForDelete = "";
+        var inMuseumForDelete ="";
+        var myInterval;
 
         function toggleSignOut() {
             firebase.auth().signOut();
@@ -47,6 +52,7 @@
 
         function getData(){
             var mySelect = document.getElementById('mySelect');
+            mySelect.options.length = 1;
             firebase.database().ref('/museums/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(museumSnapshot) {
                     var creator = firebase.auth().currentUser.uid;
@@ -59,12 +65,59 @@
                         mySelect.add(option);
                     }
                 });
+            });
+            var mySelectExhibition = document.getElementById('mySelectExhib');
+            var mySelectDelete = document.getElementById('mySelectDelete');
+            mySelectDelete.options.length = 1;
+            mySelectExhibition.options.length = 1;
+            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(exhibitionSnapshot) {
+                    var creator = firebase.auth().currentUser.uid;
 
+                    var exhibition = exhibitionSnapshot.val();
+
+                    if(creator == exhibition.creatorID){
+                        var option = document.createElement("option");
+                        option.text = exhibition.name;
+                        mySelectExhibition.add(option);
+
+                        var option2 = document.createElement("option");
+                        option2.text = exhibition.name;
+                        mySelectDelete.add(option2);
+                    }
+                });
             });
         }
 
+        function changeInputFields(cb){
+            if(cb.checked == true){
+                document.getElementById('quickstart-add').style.display = "none";
+                document.getElementById('quickstart-update').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "inline-block";
+                document.getElementById('exhibitionID').style.display = "inline-block";
+                document.getElementById('sortor').style.display = "inline-block";
+            }
+            else{
+                document.getElementById('quickstart-update').style.display = "none";
+                document.getElementById('quickstart-add').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "none";
+                document.getElementById('exhibitionID').style.display = "none";
+                document.getElementById('sortor').style.display = "none";
+            }
+        }
+
+        function changeInputFieldsReset(){
+            document.getElementById('switchID').checked = false;
+            document.getElementById('quickstart-update').style.display = "none";
+            document.getElementById('quickstart-add').style.display = "inline-block";
+            document.getElementById('myLabel').style.display = "none";
+            document.getElementById('exhibitionID').style.display = "none";
+            document.getElementById('sortor').style.display = "none";
+        }
+
         function getExhibitions(){
-            var artifactTable = document.getElementById('artifactTable');
+            var exhibitionTable = document.getElementById('exhibitionTable');
+            exhibitionTable.innerHTML = "";
             firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(exhibitionSnapshot) {
                     var exhibition = exhibitionSnapshot.val();
@@ -204,21 +257,323 @@
                     document.getElementById('qr').checked = false;
                     document.getElementById('quiz').checked = false;
 
-                    return firebase.database().ref().update(updates);
-
+                    firebase.database().ref().update(updates);
+                    getExhibitions();
+                    getData();
                 });
 
             });
 
         }
 
+        function updateExhibition(){
+            //alert("------");
+            var creator = firebase.auth().currentUser.uid;
+            var exhibition = document.getElementById('mySelectExhib');
+            var exhibitionName = exhibition.options[exhibition.selectedIndex].text;
+            var exhibitionID="";
+            //console.log(museumName);
+            if(exhibitionName == "Choose Exhibition"){
+                alert("To update a Museum , you must select one.")
+                return;
+            }
+
+            var beaconNew = $("#beacon").is(":checked");
+            var beaconRegionNew = document.getElementById('beaconRegion').value;
+            var descriptionNew = document.getElementById('description').value;
+            var imageURLNew = document.getElementById('imageURL').value;
+            var nameNew = document.getElementById('name').value;
+            var openDurationNew = document.getElementById('openDuration').value;
+            var qrNew = $("#qr").is(":checked");
+            var quizNew = $("#quiz").is(":checked");
+            var museum = document.getElementById('mySelect');
+            var museumName = museum.options[museum.selectedIndex].text;
+
+            var name = "";
+            var description = "";
+            var imageURL = "";
+            var beacon = false;
+            var beaconRegion ="";
+            var inMuseum = "";
+            var openDuration = "";
+            var qr = false;
+            var quiz = false;
+
+            var fb = firebase.database().ref();
+
+            var exhibitionNames = [];
+            firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(exhibitionSnapshot) {
+                    var exhibition = exhibitionSnapshot.val();
+                    exhibitionNames.push(exhibition.name);
+                    if(creator == exhibition.creatorID){
+                        if(exhibitionName == exhibition.name){
+                            exhibitionID = exhibitionSnapshot.key;
+
+                            name = exhibition.name;
+                            description = exhibition.description;
+                            imageURL = exhibition.imageURL;
+                            inMuseum = exhibition.inMuseum;
+                            beacon = exhibition.beacon;
+                            beaconRegion = exhibition.beaconRegion;
+                            openDuration = exhibition.openDuration;
+                            qr = exhibition.qr;
+                            quiz = exhibition.quiz;
+
+                            var artifacts = [];
+                            firebase.database().ref('/exhibitions/'+exhibitionID+'/artifactssHere/').once('value').then(function(ssnapshot) {
+                                ssnapshot.forEach(function(artSnapshot) {
+                                    var artifactKey = artSnapshot.key;
+                                    artifacts.push(artifactKey);
+                                });
+
+                                for(var i = 0 ; i < exhibitionNames.length ; i++){
+                                    if(exhibitionNames[i] == nameNew && nameNew != exhibition.name){
+                                        alert("There is already exists an exhibition by that name , name of an exhibition must be unique!");
+                                        return;
+                                    }
+                                }
+
+                                if(nameNew == ""){
+                                    nameNew = name;
+                                }
+                                if(museumName == "Choose Museum"){
+                                    museumName = inMuseum;
+                                }
+                                if(descriptionNew == ""){
+                                    descriptionNew = description;
+                                }
+                                if(imageURLNew == ""){
+                                    imageURLNew = imageURL;
+                                }
+                                if(openDurationNew == ""){
+                                    openDurationNew = openDuration;
+                                }
+                                if(beacon == false && beaconNew == true && beaconRegionNew==""){
+                                    alert("If you enable iBeacon, then you must add an iBeacon region.");
+                                    return;
+                                }
+                                if(beacon == true && beaconNew == false){
+                                    beaconRegionNew="";
+                                }
+
+                                if(museumName != "Choose Museum"){
+                                    var oldMuseumID = inMuseum;
+                                    var newMuseumName = museumName;
+                                    var newMuseumID;
+                                    firebase.database().ref('/museums/').once('value').then(function(sssnapshot) {
+                                        sssnapshot.forEach(function(musSnapshot) {
+                                            if(newMuseumName == musSnapshot.val().name){
+                                                newMuseumID= musSnapshot.key;
+                                            }
+                                        });
+
+
+                                        var mus = fb.child('/museums/');
+                                        var oldMus = mus.child(oldMuseumID);
+                                        var oldMusExhib = oldMus.child('/exhibitionsHere/');
+                                        var oldMusActualExhib = oldMusExhib.child(exhibitionID);
+                                        oldMusActualExhib.remove();
+
+                                        var updateMuseum = {};
+                                        updateMuseum['/museums/'+ newMuseumID +'/exhibitionsHere/' + exhibitionID] = true;
+                                        firebase.database().ref().update(updateMuseum);
+
+                                        var exhibitionData = {
+                                            name: nameNew,
+                                            description: descriptionNew,
+                                            creatorID: creator,
+                                            imageURL: imageURLNew,
+                                            inMuseum: newMuseumID,
+                                            openDuration: openDurationNew,
+                                            beacon: beaconNew,
+                                            beaconRegion: beaconRegionNew,
+                                            qr: qrNew,
+                                            quiz: quizNew,
+                                        };
+
+                                        var newUserKey = exhibitionID;
+
+                                        // Write the new post's data simultaneously in the posts list and the user's post list.
+
+                                        var updates = {};
+                                        updates['/exhibitions/' + newUserKey] = exhibitionData;
+                                        firebase.database().ref().update(updates);
+
+                                        for(var i = 0 ; i<artifacts.length ; i++){
+                                            var updateExhibition = {};
+                                            updateExhibition['/exhibitions/'+ exhibitionID +'/artifactsHere/' + artifacts[i]] = true;
+                                            firebase.database().ref().update(updateExhibition);
+                                        }
+
+                                    });
+                                }
+                                else{
+                                    var exhibitionData = {
+                                        name: nameNew,
+                                        description: descriptionNew,
+                                        creatorID: creator,
+                                        imageURL: imageURLNew,
+                                        inMuseum: museumName,
+                                        openDuration: openDurationNew,
+                                        beacon: beaconNew,
+                                        beaconRegion: beaconRegionNew,
+                                        qr: qrNew,
+                                        quiz: quizNew,
+                                    };
+
+                                    var newUserKey = exhibitionID;
+
+                                    // Write the new post's data simultaneously in the posts list and the user's post list.
+
+                                    var updates = {};
+                                    updates['/exhibitions/' + newUserKey] = exhibitionData;
+                                    firebase.database().ref().update(updates);
+
+                                    for(var i = 0 ; i<artifacts.length ; i++){
+                                        var updateExhibition = {};
+                                        updateExhibition['/exhibitions/'+ exhibitionID +'/artifactsHere/' + artifacts[i]] = true;
+                                        firebase.database().ref().update(updateExhibition);
+                                    }
+
+                                }
+
+                                document.getElementById('name').value = "";
+                                document.getElementById('description').value = "";
+                                document.getElementById('openDuration').value = "";
+                                document.getElementById('imageURL').value = "";
+                                document.getElementById('beaconRegion').value = "";
+                                document.getElementById('beacon').checked = false;
+                                document.getElementById('qr').checked = false;
+                                document.getElementById('quiz').checked = false;
+
+                                document.getElementById('mySelect').selectedIndex=0;
+                                document.getElementById('mySelectExhib').selectedIndex=0;
+
+                                var mySwitch = document.getElementById('switchID');
+                                mySwitch.checked = false;
+
+                                changeInputFields(mySwitch);
+                                getData();
+                                getExhibitions();
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        function deleteExhibition(){
+            console.log("asd");
+            var creator = firebase.auth().currentUser.uid;
+            var exhibition = document.getElementById('mySelectDelete');
+            var exhibitionName = exhibition.options[exhibition.selectedIndex].text;
+            exhibitionKeyForDelete = "";
+            inMuseumForDelete ="";
+
+            artifactKeys = [];
+            artifactsReadedIn = false;
+            //var fb = firebase.database().ref();
+            var r = confirm("WARNING! By deleting an exhibition, you will loose all of the artifacts what belongs to the deleted exhibition! Are you sure?");
+            if (r == true) {
+                firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(exhibitionSnapshot) {
+                        if(exhibitionSnapshot.val().creatorID == creator){
+                            if(exhibitionSnapshot.val().name == exhibitionName){
+                                exhibitionKeyForDelete = exhibitionSnapshot.key;
+                                inMuseumForDelete = exhibitionSnapshot.val().inMuseum;
+
+                                var artifactHere = exhibitionSnapshot.child('artifactsHere');
+
+                                artifactHere.forEach(function(artifactSnapshot) {
+                                    artifactKeys.push(artifactSnapshot.key)
+                                    deleteArtifact(artifactSnapshot.key);
+                                });
+                                artifactsReadedIn=true;
+                            }
+                        }
+                    });
+                    myInterval = setInterval(deleteMuseumAndExhibition, 1000);
+                });
+            }
+            else{
+                return;
+            }
+        }
+
+        function deleteMuseumAndExhibition(){
+            //console.log("meghivtak");
+            var fb = firebase.database().ref();
+            if(artifactsReadedIn == true){
+                // console.log("bent vagyok");
+                var museum = fb.child('/museums/');
+                var museumActual = museum.child(inMuseumForDelete);
+                var museumActualExhibitionsHere = museumActual.child('/exhibitionsHere/');
+                var museumActualExhibitionsHereActualExhibition = museumActualExhibitionsHere.child(exhibitionKeyForDelete);
+                museumActualExhibitionsHereActualExhibition.remove();
+
+                var exhibition = fb.child('/exhibitions/');
+                var actualExhibition = exhibition.child(exhibitionKeyForDelete);
+                actualExhibition.remove();
+
+                /*for(var i = 0 ; i < exhibitionKeys.length ; i++){
+                    //console.log(exhibitionKeys[i]);
+                    var exhibs = fb.child('/exhibitions/');
+                    var exh = exhibs.child(exhibitionKeys[i]);
+                    exh.remove();
+                }*/
+
+                firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(beaconSnapshot) {
+                        for(var i = 0 ;i<artifactKeys.length;i++){
+                            if(beaconSnapshot.val().artifactId == artifactKeys[i]){
+                                //console.log("itt");
+                                var beacon = beaconSnapshot.val();
+                                var clearBeaconID = "";
+                                var beaconData = {
+                                    beaconName: beacon.beaconName,
+                                    location: beacon.location,
+                                    creatorID: beacon.creatorID,
+                                    artifactId: clearBeaconID,
+                                };
+                                var newUserKey = beaconSnapshot.key;
+
+                                var updates = {};
+                                updates['/beacons/' + newUserKey] = beaconData;
+                                firebase.database().ref().update(updates);
+                            }
+                        }
+                    });
+                });
+                getExhibitions();
+                getData();
+                document.getElementById('mySelectDelete').selectedIndex=0;
+                clearInterval(myInterval);
+            }
+
+        }
+
+        function deleteArtifact(artifactKey){
+            var fb = firebase.database().ref();
+            var arts = fb.child('/artifacts/');
+            var art = arts.child(artifactKey);
+            art.remove();
+        }
+
         function initApp() {
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) {
+                    window.location  = "index.html";
+                }
+            });
+
             getData();
             getExhibitions();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
 
-            document.getElementById('quickstart-upload').addEventListener('click', addExhibition, true);
-
+            document.getElementById('quickstart-add').addEventListener('click', addExhibition, true);
+            document.getElementById('quickstart-update').addEventListener('click', updateExhibition, true);
+            document.getElementById('quickstart-delete').addEventListener('click', deleteExhibition, true);
         }
         window.onload = function() {
             initApp();
@@ -300,11 +655,26 @@
 
             <div class="row">
                 <div class="col-lg-3">
+                    <label>Add a new</label>
+                    <label class="switch">
+                        <input type="checkbox" id="switchID" onclick="changeInputFields(this);">
+                        <div class="slider round"></div>
+                    </label>
+                    <label>Update</label>
+                    <p></p>
 
                     <form role="form">
+                        <label style="display: none" id="myLabel">Select a Exhibition: &nbsp;&nbsp;&nbsp;</label><p style="display: none" id="sortor"></p>
+                        <div class="mdl-textfield__input" style="display:none;width:auto;" type="select" id="exhibitionID" name="exhibitionID">
+                            <select id="mySelectExhib">
+                                <option value="" disabled selected defaultSelected>Choose Exhibition</option>
+
+                            </select>
+                        </div>
+                        <p></p>
                         <label>Select a museum: &nbsp;&nbsp;&nbsp;</label><p></p>
                         <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="museumID" name="museumID">
-                            <select id="mySelect" onchange="changeInputFields();">
+                            <select id="mySelect">
                                 <option value="" disabled selected defaultSelected>Choose Museum</option>
 
                             </select>
@@ -318,8 +688,11 @@
                         <label>iBeacon region: &nbsp;&nbsp;&nbsp;</label><input disabled class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="beaconRegion" name="beaconRegion" placeholder="a000b111-222c-33d4-eee5-666f7777777f"/><p></p>
                         <label>Are QR codes enabled?: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="qr" name="qr"/><p></p>
                         <label>Are quiz questions enabled?: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" class="mdl-textfield__input" style="display:inline;width:auto;" id="quiz" name="Quiz"/><p></p>
-                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
-                        <input type="reset" name="reset" value="Reset" onclick='checkboxClick(this);'>
+                        <input type="button" style="display: none" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-update" name="update" value="Update">
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-add" name="add" value="Add new Item">
+                        <input type="reset" name="reset" value="Reset" onclick="changeInputFieldsReset();checkboxClick(this);">
+                        <!--<input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
+                        <input type="reset" name="reset" value="Reset" onclick='checkboxClick(this);'>-->
                     </form>
                 </div>
 
@@ -339,6 +712,22 @@
                         <tbody id ="exhibitionTable"></tbody>
                         </thead>
                     </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-3">
+                    <form>
+                        <h3>Delete an Exhibition</h3>
+                        <div>Deleting a Exhibition will couse of delete every artifacts, what belongs to the selected Exhibition.</div><p></p>
+                        <label>Select a Exhibition: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="width:auto;" type="select" id="exhibitionIDDelete" name="museumID">
+                            <select id="mySelectDelete">
+                                <option value="" disabled selected defaultSelected>Choose Exhibition</option>
+                            </select>
+                        </div><p></p>
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-delete" name="delete" value="Delete">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
                 </div>
             </div>
         </div>
