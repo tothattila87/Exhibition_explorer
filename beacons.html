@@ -45,9 +45,37 @@
             window.location = "index.html";
         }
 
+        function changeInputType(cb){
+            //console.log("itt");
+            if(cb.checked == true){
+                document.getElementById('quickstart-add').style.display = "none";
+                document.getElementById('quickstart-update').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "inline-block";
+                document.getElementById('beaconID').style.display = "inline-block";
+                document.getElementById('sortor').style.display = "inline-block";
+            }
+            else{
+                document.getElementById('quickstart-update').style.display = "none";
+                document.getElementById('quickstart-add').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "none";
+                document.getElementById('beaconID').style.display = "none";
+                document.getElementById('sortor').style.display = "none";
+            }
+        }
+
+        function resetInputFields(){
+            document.getElementById('switchID').checked = false;
+            document.getElementById('quickstart-update').style.display = "none";
+            document.getElementById('quickstart-add').style.display = "inline-block";
+            document.getElementById('myLabel').style.display = "none";
+            document.getElementById('beaconID').style.display = "none";
+            document.getElementById('sortor').style.display = "none";
+            getData();
+        }
+
         function getData(){
             var mySelect = document.getElementById('mySelect');
-
+            mySelect.options.length = 1;
             firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(artSnapshot) {
                     var art = artSnapshot.val();
@@ -61,10 +89,31 @@
                     }
                 });
             });
+            var mySelectBeacon = document.getElementById('mySelectBeacon');
+            mySelectBeacon.options.length = 1;
+            var mySelectDelete = document.getElementById('mySelectDelete');
+            mySelectDelete.options.length = 1;
+            firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(beaconSnapshot) {
+                    var beacon = beaconSnapshot.val();
+                    var creator = firebase.auth().currentUser.uid;
+                    if(creator == beacon.creatorID){
+                        var option = document.createElement("option");
+                        option.text = beaconSnapshot.key + "." + beacon.beaconName;
+                        mySelectBeacon.add(option);
+
+                        var option1 = document.createElement("option");
+                        option1.text =  beaconSnapshot.key + "." + beacon.beaconName;
+                        mySelectDelete.add(option1);
+                    }
+                });
+            });
+
         }
 
         function getBeaconTable(){
             var beaconTable = document.getElementById('beaconTable');
+            beaconTable.innerHTML = "";
             firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(beaconSnapshot) {
                     var beacon = beaconSnapshot.val();
@@ -120,13 +169,7 @@
             var mySelect = document.getElementById('mySelect');
 
             if(cb.checked == true){
-                mySelect.options.length = 0;
-                var opt = document.createElement("option");
-                opt.text = "Choose Artifact";
-                opt.disabled = true;
-                opt.selected = true;
-                opt.defaults = true;
-                mySelect.add(opt);
+                mySelect.options.length = 1;
 
                 var artifactsWithBeacons = [];
 
@@ -158,13 +201,7 @@
                 });
             }
             else{
-                mySelect.options.length = 0;
-                var opt = document.createElement("option");
-                opt.text = "Choose Artifact";
-                opt.disabled = true;
-                opt.selected = true;
-                opt.defaults = true;
-                mySelect.add(opt);
+                mySelect.options.length = 1;
                 getData();
             }
 
@@ -236,11 +273,37 @@
 
                 document.getElementById('mySelect').selectedIndex=0;
 
-                return firebase.database().ref().update(updates);
+                firebase.database().ref().update(updates);
+                getData();
+                getBeaconTable();
             });
 
             //console.log(quiz);
 
+        }
+
+        function updateBeacon(){
+            
+        }
+
+        function deleteBeacon(){
+            var beaconSelect = document.getElementById('mySelectDelete');
+            var beaconNameAndID = beaconSelect.options[beaconSelect.selectedIndex].text;
+            var beaconArrayString = beaconNameAndID.split(".");
+            var beaconID = beaconArrayString[0];
+
+            firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(beaconSnapshot) {
+                    if(beaconSnapshot.key == beaconID){
+                        var fb = firebase.database().ref();
+                        var beacons = fb.child('/beacons/');
+                        var beacon = beacons.child(beaconID);
+                        beacon.remove();
+                    }
+                });
+                getBeaconTable();
+                getData();
+            });
         }
 
         function initApp() {
@@ -255,7 +318,9 @@
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
 
-            document.getElementById('quickstart-upload').addEventListener('click', addBeacon, true);
+            document.getElementById('quickstart-add').addEventListener('click', addBeacon, true);
+            document.getElementById('quickstart-update').addEventListener('click', updateBeacon, true);
+            document.getElementById('quickstart-delete').addEventListener('click', deleteBeacon, true);
         }
         window.onload = function() {
             initApp();
@@ -338,7 +403,24 @@
             <div class="row">
                 <div class="col-lg-3">
 
+                    <label>Add a new</label>
+                    <label class="switch">
+                        <input type="checkbox" id="switchID" onclick="changeInputType(this);">
+                        <div class="slider round"></div>
+                    </label>
+                    <label>Update</label>
+                    <p></p>
+
                     <form role="form">
+                        <label style="display: none" id="myLabel">Select a Beacon: &nbsp;&nbsp;&nbsp;</label><p style="display: none" id="sortor"></p><p></p>
+                        <div class="mdl-textfield__input" style="display:none;width:auto;" type="select" id="beaconID" name="exhibitionID">
+                            <select id="mySelectBeacon">
+                                <option value="" disabled selected defaultSelected>Choose Beacon</option>
+
+                            </select>
+                        </div>
+                        <p></p>
+
                         <label>List only the beaconless artifacts: &nbsp;&nbsp;&nbsp;</label><input type="checkbox" onclick='checkboxClick(this);' style="display:inline;width:auto;" id="checkbox" name="checkbox"/><p></p>
                         <label>Select an artifact: &nbsp;&nbsp;&nbsp;</label><p></p>
                         <div class="mdl-textfield__input" style="display:inline;width:auto;" type="select" id="artifactID" name="artifactID">
@@ -350,8 +432,11 @@
                         <p></p>
                         <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/><p></p>
                         <label>Location: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="location" name="location" placeholder="2. floor"/><p></p>
-                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
-                        <input type="reset" name="reset" value="Reset" onclick='checkboxClick(this);'>
+                        <input type="button" style="display: none" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-update" name="update" value="Update">
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-add" name="add" value="Add new Item">
+                        <input type="reset" name="reset" value="Reset" onclick="resetInputFields();">
+                        <!--<input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
+                        <input type="reset" name="reset" value="Reset" onclick='checkboxClick(this);'>-->
                     </form>
                 </div>
                 <div class="col-lg-9">
@@ -369,6 +454,21 @@
                         </thead>
                     </table>
 
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-3">
+                    <form>
+                        <h3>Delete an Artifact</h3>
+                        <label>Select a Artifact: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="width:auto;" type="select" id="artifactIDDelete" name="museumID">
+                            <select id="mySelectDelete">
+                                <option value="" disabled selected defaultSelected>Choose Beacon</option>
+                            </select>
+                        </div><p></p>
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-delete" name="delete" value="Delete">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
                 </div>
             </div>
         </div>
