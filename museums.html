@@ -38,7 +38,9 @@
         };
 
         firebase.initializeApp(config);
-
+        var myInterval;
+        var exhibitionKeys = [];
+        var artifactsReadedIn = false;
 
         function toggleSignOut() {
             firebase.auth().signOut();
@@ -47,24 +49,58 @@
 
         function getData(){
             var mySelect = document.getElementById('mySelect');
+            var mySelectDelete = document.getElementById('mySelectDelete');
 
-            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
-                snapshot.forEach(function(artSnapshot) {
-                    var art = artSnapshot.val();
-                    var key = art.artifactID;
+            mySelect.options.length = 1;
+            mySelectDelete.options.length = 1;
+
+            firebase.database().ref('/museums/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(museumSnapshot) {
+                    var museum = museumSnapshot.val();
+                    //var key = museum.artifactID;
                     var creator = firebase.auth().currentUser.uid;
-                    //console.log(creator + " - " + art.creatorID);
-                    if(creator == art.creatorID){
+                    //console.log(creator + " - " + museum.creatorID);
+                    if(creator == museum.creatorID){
                         var option = document.createElement("option");
-                        option.text = key + " - " + art.name;
+                        option.text = museum.name;
                         mySelect.add(option);
+                        var option1 = document.createElement("option");
+                        option1.text = museum.name;
+                        mySelectDelete.add(option1);
                     }
                 });
             });
         }
 
+        function changeInputFields(cb){
+            if(cb.checked == true){
+                document.getElementById('quickstart-add').style.display = "none";
+                document.getElementById('quickstart-update').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "inline-block";
+                document.getElementById('museumID').style.display = "inline-block";
+                document.getElementById('sortor').style.display = "inline-block";
+            }
+            else{
+                document.getElementById('quickstart-update').style.display = "none";
+                document.getElementById('quickstart-add').style.display = "inline-block";
+                document.getElementById('myLabel').style.display = "none";
+                document.getElementById('museumID').style.display = "none";
+                document.getElementById('sortor').style.display = "none";
+            }
+        }
+
+        function changeInputFieldsReset(){
+            document.getElementById('switchID').checked = false;
+            document.getElementById('quickstart-update').style.display = "none";
+            document.getElementById('quickstart-add').style.display = "inline-block";
+            document.getElementById('myLabel').style.display = "none";
+            document.getElementById('museumID').style.display = "none";
+            document.getElementById('sortor').style.display = "none";
+        }
+
         function getMuseums(){
-            var artifactTable = document.getElementById('artifactTable');
+            var museumTable = document.getElementById('museumTable');
+            museumTable.innerHTML = "";
             firebase.database().ref('/museums/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(museumSnapshot) {
                     var museum = museumSnapshot.val();
@@ -131,16 +167,201 @@
                 document.getElementById('description').value = "";
                 document.getElementById('imageURL').value = "";
 
-                return firebase.database().ref().update(updates);
+                firebase.database().ref().update(updates);
+                getData();
+                getMuseums();
             });
         }
 
+        function updateMuseum(){
+            //alert("------");
+            var creator = firebase.auth().currentUser.uid;
+            var museum = document.getElementById('mySelect');
+            var museumName = museum.options[museum.selectedIndex].text;
+            var museumID="";
+            //console.log(museumName);
+            if(museumName == "Choose Museum"){
+                alert("To update a Museum , you must select one.")
+                return;
+            }
+
+            var addressNew = document.getElementById('address').value;
+            var descriptionNew = document.getElementById('description').value;
+            var imageURLNew = document.getElementById('imageURL').value;
+            var nameNew = document.getElementById('name').value;
+
+            var name = "";
+            var description = "";
+            var imageURL = "";
+            var address = "";
+
+            var museumsNames = [];
+            firebase.database().ref('/museums/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(museumSnapshot) {
+                    var museum = museumSnapshot.val();
+                    museumsNames.push(museum.name);
+                    if(creator == museum.creatorID){
+                        if(museumName == museum.name){
+                            museumID = museumSnapshot.key;
+                            name = museum.name;
+                            description = museum.description;
+                            imageURL = museum.imageURL;
+                            address = museum.address;
+                            var exhibitions = [];
+                            firebase.database().ref('/museums/'+museumID+'/exhibitionsHere/').once('value').then(function(snapshot) {
+                                snapshot.forEach(function(exhibSnapshot) {
+                                    var exhibKey = exhibSnapshot.key;
+                                    exhibitions.push(exhibKey);
+                                });
+
+                                for(var i = 0 ; i < museumsNames.length ; i++){
+                                    if(museumsNames[i] == nameNew && nameNew != museum.name){
+                                        alert("There is already exists a museum by that name , name of a museum must be unique!");
+                                        return;
+                                    }
+                                }
+
+                                if(nameNew == ""){
+                                    nameNew = name;
+                                }
+                                if(addressNew == ""){
+                                    addressNew = address;
+                                }
+                                if(descriptionNew == ""){
+                                    descriptionNew = description;
+                                }
+                                if(imageURLNew == ""){
+                                    imageURLNew = imageURL;
+                                }
+
+                                var museumData = {
+                                    name: nameNew,
+                                    description: descriptionNew,
+                                    creatorID: creator,
+                                    imageURL: imageURLNew,
+                                    address: addressNew,
+                                };
+
+                                var newUserKey = museumID;
+
+                                // Write the new post's data simultaneously in the posts list and the user's post list.
+
+                                var updates = {};
+                                updates['/museums/' + newUserKey] = museumData;
+                                firebase.database().ref().update(updates);
+
+                                for(var i = 0 ; i<exhibitions.length ; i++){
+                                    var updateMuseum = {};
+                                    updateMuseum['/museums/'+ museumID +'/exhibitionsHere/' + exhibitions[i]] = true;
+                                    firebase.database().ref().update(updateMuseum);
+                                }
+
+                                document.getElementById('name').value = "";
+                                document.getElementById('address').value = "";
+                                document.getElementById('description').value = "";
+                                document.getElementById('imageURL').value = "";
+
+                                var mySwitch = document.getElementById('switchID');
+                                mySwitch.checked = false;
+
+                                changeInputFields(mySwitch);
+                                getData();
+                                getMuseums();
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        function deleteMuseum(){
+            var creator = firebase.auth().currentUser.uid;
+            var museum = document.getElementById('mySelectDelete');
+            var museumName = museum.options[museum.selectedIndex].text;
+            var museumKey = "";
+            exhibitionKeys = [];
+            artifactsReadedIn = false;
+            var fb = firebase.database().ref();
+            var r = confirm("WARNING! By deleting a museum, you will loose all of the exhibitions and artifacts what belongs to the deleted museum! Are you sure?");
+            if (r == true) {
+                firebase.database().ref('/museums/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(museumSnapshot) {
+                        var mus = museumSnapshot.val();
+                        if(creator == mus.creatorID){
+                            if(museumName == mus.name){
+                                museumKey = museumSnapshot.key;
+
+                                var exhibHere = museumSnapshot.child('exhibitionsHere');
+
+                                exhibHere.forEach(function(exhibSnapshot) {
+                                    exhibitionKeys.push(exhibSnapshot.key);
+                                });
+
+                                firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
+                                    snapshot.forEach(function(exhibitionSnapshot) {
+                                        for(var i = 0 ;i<exhibitionKeys.length;i++){
+                                            if(exhibitionSnapshot.key == exhibitionKeys[i]){
+                                                var artifactHere = exhibitionSnapshot.child('artifactsHere');
+
+                                                artifactHere.forEach(function(artifactSnapshot) {
+                                                    //console.log(artifactSnapshot.key);
+                                                    deleteArtifact(artifactSnapshot.key);
+                                                });
+                                            }
+                                        }
+                                    });
+                                    artifactsReadedIn=true;
+                                });
+                            }
+                        }
+                    });
+
+                    var mus = fb.child('/museums/');
+                    var actualMus = mus.child(museumKey);
+                    actualMus.remove();
+                    getMuseums();
+                    getData();
+                    document.getElementById('mySelectDelete').selectedIndex=0;
+                });
+                myInterval = setInterval(deleteExhibition, 1000);
+
+            } else {
+                return;
+            }
+        }
+
+        function deleteExhibition(){
+            //console.log("meghivtak");
+            var fb = firebase.database().ref();
+            if(artifactsReadedIn == true){
+               // console.log("bent vagyok");
+                for(var i = 0 ; i < exhibitionKeys.length ; i++){
+                    //console.log(exhibitionKeys[i]);
+                    var exhibs = fb.child('/exhibitions/');
+                    var exh = exhibs.child(exhibitionKeys[i]);
+                    exh.remove();
+                }
+                clearInterval(myInterval);
+            }
+
+        }
+
+        function deleteArtifact(artifactKey){
+            var fb = firebase.database().ref();
+            var arts = fb.child('/artifacts/');
+            var art = arts.child(artifactKey);
+            art.remove();
+        }
+
         function initApp() {
+            getData();
             getMuseums();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
             document.getElementById('quickstart-logout').disabled = false;
 
-            document.getElementById('quickstart-upload').addEventListener('click', addMuseum, true);
+            document.getElementById('quickstart-add').addEventListener('click', addMuseum, true);
+            document.getElementById('quickstart-update').addEventListener('click', updateMuseum, true);
+            document.getElementById('quickstart-delete').addEventListener('click', deleteMuseum, true);
         }
         window.onload = function() {
             initApp();
@@ -222,15 +443,29 @@
 
             <div class="row">
                 <div class="col-lg-3">
+                    <label>Add a new</label>
+                    <label class="switch">
+                        <input type="checkbox" id="switchID" onclick="changeInputFields(this);">
+                        <div class="slider round"></div>
+                    </label>
+                    <label>Update</label>
 
                     <form role="form">
+                        <label style="display: none" id="myLabel">Select a Museum:: &nbsp;&nbsp;&nbsp;</label><p style="display: none" id="sortor"></p>
+                        <div class="mdl-textfield__input" style="display:none;width:auto;" type="select" id="museumID" name="museumID">
+                            <select id="mySelect">
+                                <option value="" disabled selected defaultSelected>Choose Museum</option>
+
+                            </select>
+                        </div>
                         <p></p>
                         <label>Name: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="name" name="name" placeholder="Name"/><p></p>
                         <label>Address: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="textarea" id="address" name="address" placeholder="Budapest Kossuth street 1."/><p></p>
                         <label>Description: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="description" name="description" placeholder="Description"/><p></p>
                         <label>Image URL: &nbsp;&nbsp;&nbsp;</label><input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="imageURL" name="imageURL" placeholder="Image URL"/><p></p>
-                        <input type="button" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-upload" name="upload" value="Upload">
-                        <input type="reset" name="reset" value="Reset">
+                        <input type="button" style="display: none" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-update" name="update" value="Update">
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-add" name="add" value="Add new Item">
+                        <input type="reset" name="reset" value="Reset" onclick="changeInputFieldsReset();">
                     </form>
                 </div>
 
@@ -247,6 +482,22 @@
                         <tbody id ="museumTable"></tbody>
                         </thead>
                     </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-3">
+                    <form>
+                        <h3>Delete a Museum</h3>
+                        <div>Deleting a Museum will couse of delete every exhibitions and artifacts, what belongs to the selected museum.</div><p></p>
+                        <label>Select a Museum:: &nbsp;&nbsp;&nbsp;</label><p></p>
+                        <div class="mdl-textfield__input" style="width:auto;" type="select" id="museumIDDelete" name="museumID">
+                            <select id="mySelectDelete">
+                                <option value="" disabled selected defaultSelected>Choose Museum</option>
+                            </select>
+                        </div><p></p>
+                        <input type="button" style="display: inline-block" class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-delete" name="delete" value="Delete">
+                        <input type="reset" name="reset" value="Reset">
+                    </form>
                 </div>
             </div>
         </div>
