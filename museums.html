@@ -41,6 +41,7 @@
         var myInterval;
         var exhibitionKeys = [];
         var artifactsReadedIn = false;
+        var artifactKeys = [];
 
         function toggleSignOut() {
             firebase.auth().signOut();
@@ -297,14 +298,14 @@
                                     exhibitionKeys.push(exhibSnapshot.key);
                                 });
 
-                                firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
-                                    snapshot.forEach(function(exhibitionSnapshot) {
+                                firebase.database().ref('/exhibitions/').once('value').then(function(ssnapshot) {
+                                    ssnapshot.forEach(function(exhibitionSnapshot) {
                                         for(var i = 0 ;i<exhibitionKeys.length;i++){
                                             if(exhibitionSnapshot.key == exhibitionKeys[i]){
                                                 var artifactHere = exhibitionSnapshot.child('artifactsHere');
 
                                                 artifactHere.forEach(function(artifactSnapshot) {
-                                                    //console.log(artifactSnapshot.key);
+                                                    artifactKeys.push(artifactSnapshot.key)
                                                     deleteArtifact(artifactSnapshot.key);
                                                 });
                                             }
@@ -341,6 +342,29 @@
                     var exh = exhibs.child(exhibitionKeys[i]);
                     exh.remove();
                 }
+                firebase.database().ref('/beacons/').once('value').then(function(snapshot) {
+                    snapshot.forEach(function(beaconSnapshot) {
+                        for(var i = 0 ;i<artifactKeys.length;i++){
+                            if(beaconSnapshot.val().artifactId == artifactKeys[i]){
+                                //console.log("itt");
+                                var beacon = beaconSnapshot.val();
+                                var clearBeaconID = "";
+                                var beaconData = {
+                                    beaconName: beacon.beaconName,
+                                    location: beacon.location,
+                                    creatorID: beacon.creatorID,
+                                    artifactId: clearBeaconID,
+                                };
+                                var newUserKey = beaconSnapshot.key;
+
+                                var updates = {};
+                                updates['/beacons/' + newUserKey] = beaconData;
+                                firebase.database().ref().update(updates);
+                            }
+                        }
+                    });
+                });
+
                 clearInterval(myInterval);
             }
 
