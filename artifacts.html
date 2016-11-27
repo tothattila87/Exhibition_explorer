@@ -47,6 +47,7 @@
 
         function getData(){
             var mySelect = document.getElementById('mySelect');
+            mySelect.options.length = 1;
             firebase.database().ref('/exhibitions/').once('value').then(function(snapshot) {
 
                 snapshot.forEach(function(exhibSnapshot) {
@@ -64,6 +65,7 @@
 
         function getArtifacts(){
             var artifactTable = document.getElementById('artifactTable');
+            artifactTable.innerHTML = "";
             firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
                 snapshot.forEach(function(artifactSnapshot) {
                     var artifact = artifactSnapshot.val();
@@ -265,7 +267,10 @@
                     document.getElementById('quizFalseAnswere3').disabled = true;
                     document.getElementById('qrURL').disabled = true;
 
-                    return firebase.database().ref().update(updates);
+                    firebase.database().ref().update(updates);
+
+                    getData();
+                    getArtifacts();
                 });
 
             });
@@ -276,6 +281,13 @@
         }
 
         function initApp() {
+
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) {
+                    window.location  = "index.html";
+                }
+            });
+
             getData();
             getArtifacts();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);

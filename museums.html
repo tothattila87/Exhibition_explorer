@@ -378,6 +378,14 @@
         }
 
         function initApp() {
+
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) {
+                    window.location  = "index.html";
+                }
+            });
+
+
             getData();
             getMuseums();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
@@ -475,7 +483,7 @@
                     <label>Update</label>
 
                     <form role="form">
-                        <label style="display: none" id="myLabel">Select a Museum:: &nbsp;&nbsp;&nbsp;</label><p style="display: none" id="sortor"></p>
+                        <label style="display: none" id="myLabel">Select a Museum: &nbsp;&nbsp;&nbsp;</label><p style="display: none" id="sortor"></p>
                         <div class="mdl-textfield__input" style="display:none;width:auto;" type="select" id="museumID" name="museumID">
                             <select id="mySelect">
                                 <option value="" disabled selected defaultSelected>Choose Museum</option>

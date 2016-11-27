@@ -244,6 +244,12 @@
         }
 
         function initApp() {
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) {
+                    window.location  = "index.html";
+                }
+            });
+
             getData();
             getBeaconTable();
             document.getElementById('quickstart-logout').addEventListener('click', toggleSignOut, true);
