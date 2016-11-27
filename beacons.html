@@ -283,7 +283,84 @@
         }
 
         function updateBeacon(){
-            
+            var locationNew = document.getElementById('location').value;
+            var nameNew = document.getElementById('name').value;
+
+            var artifact = document.getElementById('mySelect');
+            var artName = artifact.options[artifact.selectedIndex].text;
+            var artIDNew="";
+
+            var beaconSelect = document.getElementById('mySelectBeacon');
+            var beaconNameAndID = beaconSelect.options[beaconSelect.selectedIndex].text;
+            var beaconArrayString = beaconNameAndID.split(".");
+            var beaconKey=beaconArrayString[0];
+
+            if(beaconNameAndID == "Choose Beacon"){
+                alert("To update a Beacon , you must select one.")
+                return;
+            }
+
+            var creator = firebase.auth().currentUser.uid;
+            var beaconName="";
+            var location ="";
+
+            firebase.database().ref('/artifacts/').once('value').then(function(snapshot) {
+                snapshot.forEach(function(artSnapshot) {
+                    var art = artSnapshot.val();
+                    var artNameTemp = art.artifactID + " - " + art.name;
+                    //console.log(exhibSnapshot.key);
+                    if(artNameTemp == artName){
+                        artIDNew = artSnapshot.key;
+                    }
+                    //lastID = artSnapshot.key;
+                    //console.log(lastID);
+                });
+                //console.log(exhibID);
+                firebase.database().ref('/beacons/').once('value').then(function(ssnapshot) {
+                    ssnapshot.forEach(function(beaconSnapshot) {
+                        //var tempBeaconString =   + "." + beaconSnapshot.val().beaconName;
+                        if(beaconKey == beaconSnapshot.key){
+                            beaconName = beaconSnapshot.val().beaconName;
+                            location = beaconSnapshot.val().location;
+                            if(artName == "Choose Artifact"){
+                                artIDNew = beaconSnapshot.val().artifactId;
+                            }
+                        }
+                    });
+                    if(nameNew==""){
+                        nameNew = beaconName;
+                    }
+
+                    if(locationNew==""){
+                        locationNew = location;
+                    }
+
+                    var beaconData = {
+                        beaconName: nameNew,
+                        location: locationNew,
+                        artifactId: artIDNew,
+                        creatorID: creator,
+                    };
+
+
+                    // Get a key for a new Post.
+                    var newUserKey =  beaconKey;
+
+                    // Write the new post's data simultaneously in the posts list and the user's post list.
+                    var updates = {};
+                    updates['/beacons/' + newUserKey] = beaconData;
+
+                    document.getElementById('location').value = "";
+                    document.getElementById('name').value = "";
+
+                    document.getElementById('mySelect').selectedIndex=0;
+
+                    firebase.database().ref().update(updates);
+                    getData();
+                    getBeaconTable();
+                    resetInputFields();
+                });
+            });
         }
 
         function deleteBeacon(){
